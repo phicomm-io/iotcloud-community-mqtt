@@ -47,3 +47,5 @@ HA 发现为 `homeassistant/<component>/<scope>/<model>_<mac>_<entity>/config`�
 ## Legacy
 
 TC1 保留原有 `device/ztc1/<MAC>/...` 与原 HA 标识，订阅保留大小写及分隔符变体。平台支持原始 JSON 状态与命令，以及当前固件 Legacy 模式保留的 HA 文本状态与控制；收到文本状态后沿用大写 MAC 的文本命令。Legacy 不会自动变成 TMCP。M1/A1 不提供 Legacy 或早期项目协议。
+
+TMCP address announcements use `phicomm/v2/<scope>/address/<mac>`. Only registered devices may publish their address; accounts with an A1 may subscribe to their own scoped address announcements. Cross-account address access remains denied.

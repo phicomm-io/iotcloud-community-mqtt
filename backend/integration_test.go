@@ -422,19 +422,19 @@ func TestRealDynamicSecurityAliasesAndLinkage(t *testing.T) {
 	bind := "phicomm/v2/" + key + "/m1/001122334455/link/aabbccddeeff/result"
 	address := "phicomm/v2/" + key + "/a1/aabbccddeeff/link/001122334455/query"
 	group := "phicomm/linkage/" + key + "/living-room:00:00:00:00:00:00/fan/set"
-	for _, topic := range []string{bind, address, group, "phicomm/v2/" + key + "/a1/aabbccddeeff/link/+/query"} {
+	for _, topic := range []string{bind, address, group, "phicomm/v2/" + key + "/address/+", "phicomm/v2/" + key + "/a1/aabbccddeeff/link/+/query"} {
 		if grant(own, topic, nil) == 128 {
 			t.Fatal("own linkage denied", topic)
 		}
 	}
-	for _, topic := range []string{"phicomm/bind/" + key + "/ffffffffffff", "phicomm/bind/" + foreignKey + "/aabbccddeeff", "phicomm/address/" + foreignKey + "/+", "phicomm/linkage/" + foreignKey + "/#", "phicomm/bind/aabbccddeeff", "living-room:00:00:00:00:00:00/#", "$CONTROL/dynamic-security/v1/response"} {
+	for _, topic := range []string{"phicomm/bind/" + key + "/ffffffffffff", "phicomm/v2/" + foreignKey + "/address/+", "phicomm/bind/" + foreignKey + "/aabbccddeeff", "phicomm/address/" + foreignKey + "/+", "phicomm/linkage/" + foreignKey + "/#", "phicomm/bind/aabbccddeeff", "living-room:00:00:00:00:00:00/#", "$CONTROL/dynamic-security/v1/response"} {
 		if grant(own, topic, nil) != 128 {
 			t.Fatal("unexpected permission", topic)
 		}
 	}
 	deliveries := make(chan string, 10)
 	handler := func(_ mqtt.Client, m mqtt.Message) { deliveries <- string(m.Payload()) }
-	for _, topic := range []string{bind, address, group} {
+	for _, topic := range []string{bind, address, group, "phicomm/v2/" + key + "/address/001122334455"} {
 		if grant(own, topic, handler) == 128 {
 			t.Fatal(topic)
 		}

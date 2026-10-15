@@ -60,7 +60,15 @@ func (a *Application) accountRules(username string) ([]Rule, error) {
 			linked[userKey(topicUsername(d))] = true
 		}
 	}
+	for _, d := range devices {
+		if d.Status == "active" || d.Status == "pending" {
+			rules = append(rules, Rule{"publishClientSend", "phicomm/v2/" + userKey(topicUsername(d)) + "/address/" + d.MAC, true, 1})
+		}
+	}
 	for key := range linked {
+		for _, kind := range []string{"publishClientReceive", "subscribePattern"} {
+			rules = append(rules, Rule{kind, "phicomm/v2/" + key + "/address/+", true, 1})
+		}
 		for _, kind := range []string{"publishClientSend", "publishClientReceive", "subscribePattern"} {
 			rules = append(rules, Rule{kind, "phicomm/linkage/" + key + "/#", true, 1})
 		}
