@@ -3,6 +3,7 @@ import { ref, onMounted } from "vue";
 import AuthShell from "../components/AuthShell.vue";
 import { api } from "../account";
 const username = ref(""),
+  email = ref(""),
   password = ref(""),
   code = ref(""),
   message = ref(""),
@@ -22,7 +23,7 @@ async function verify() {
   try {
     await api("/register/verify", {
       method: "POST",
-      body: JSON.stringify({ email: username.value }),
+      body: JSON.stringify({ email: email.value }),
     });
     message.value = "验证码已发送";
   } catch (e) {
@@ -36,6 +37,7 @@ async function register() {
       method: "POST",
       body: JSON.stringify({
         username: username.value,
+        email: email.value,
         password: password.value,
         code: code.value,
       }),
@@ -56,10 +58,13 @@ async function register() {
     <p>创建账号，自动同步设备列表。</p>
     <form class="auth-form" v-if="level" @submit.prevent="register">
       <label
-        >{{ level === 2 ? "邮箱" : "用户名"
-        }}<input
+        >用户名<input
           v-model="username"
-          :type="level === 2 ? 'email' : 'text'"
+          type="text"
+          minlength="3"
+          maxlength="32"
+          pattern="[A-Za-z0-9_.\-]{3,32}"
+          placeholder="3–32 个字母、数字、下划线、点或连字符"
           autocomplete="username"
           required /></label
       ><label
@@ -71,7 +76,7 @@ async function register() {
           autocomplete="new-password"
           required /></label
       ><template v-if="level === 2"
-        ><button type="button" @click="verify">发送验证码</button
+        ><label>验证邮箱<input v-model="email" type="email" maxlength="254" autocomplete="email" required /></label><button type="button" @click="verify">发送验证码</button
         ><label>验证码<input v-model="code" required /></label></template
       ><button class="primary-button auth-submit" :disabled="busy">注册</button>
     </form>

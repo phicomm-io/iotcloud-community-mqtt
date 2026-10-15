@@ -72,7 +72,7 @@ function removeUser(u) {
 }
 function removeDevice(d) {
   if (confirm("解绑并撤销权限：" + d.mac + "？"))
-    run(() => request("/device/" + (d.namespace ? "scoped/" : "") + d.mac + (d.namespace ? "?username=" + encodeURIComponent(d.username) : ""), "DELETE"));
+    run(() => request("/device/" + (d.namespace ? "scoped/" : "") + d.mac + (d.namespace ? "?username=" + encodeURIComponent(d.username) + "&mqtt_username=" + encodeURIComponent(d.mqtt_username || d.username) : ""), "DELETE"));
 }
 function bind() {
   return run(async () => {
@@ -80,7 +80,7 @@ function bind() {
       username: owner.value,
       mac: mac.value,
       model: model.value,
-      version: model.value === "tc1" ? version.value : "community",
+      version: model.value === "tc1" ? version.value : "v2",
     });
     mac.value = "";
   });
@@ -97,7 +97,7 @@ function bind() {
       <section class="card">
         <h2>账号</h2>
         <form @submit.prevent="addUser">
-          <label>用户名<input v-model="newUser" required /></label
+          <label>用户名<input v-model="newUser" minlength="3" maxlength="32" pattern="[A-Za-z0-9_.\-]{3,32}" required /></label
           ><label
             >初始密码<input
               v-model="newPass"
@@ -135,8 +135,8 @@ function bind() {
               <option>a1</option>
             </select></label
           ><select v-if="model === 'tc1'" v-model="version">
-            <option>v1</option>
-            <option>v2</option></select
+            <option value="v1">Legacy</option>
+            <option value="v2">TMCP</option></select
           ><button>绑定</button>
         </form>
         <ul>
