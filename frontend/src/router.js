@@ -1,7 +1,7 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router';
 import { account, restoreAccount } from './account';
 const router = createRouter({
- history: createWebHistory(),
+ history: import.meta.env.VITE_DEMO === '1' ? createWebHashHistory() : createWebHistory(),
  routes: [
   { path: '/login', name: 'Login', component: () => import('./views/LoginPage.vue') },
   { path: '/', name: 'Console', component: () => import('./App.vue'), meta: { requiresAccount: true } },

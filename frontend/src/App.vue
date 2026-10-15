@@ -14,6 +14,8 @@ import DeviceHome from './components/DeviceHome.vue';
 import PlatformSettings from './components/PlatformSettings.vue';
 import ThemeToggle from './components/ThemeToggle.vue';
 
+const demoMode=import.meta.env.VITE_DEMO === '1';
+const demoDevices=demoMode?Object.fromEntries(['tc1','m1','a1'].map(m=>[m,window.PhicommDemo.create(m)])):null;
 const route=useRoute(),router=useRouter();
 const home=ref(null),nameDialog=ref(null),aliases=ref({});
 function displayName(d){const name=aliases.value[deviceKey(d)]||states[deviceKey(d)]?.name||d.name;if(name)return name;const peers=list.value.filter(x=>x.model===d.model);return deviceType(d)+(peers.length>1?' '+(peers.findIndex(x=>deviceKey(x)===deviceKey(d))+1):'');}
@@ -37,6 +39,7 @@ watch(()=>active.value?deviceKey(active.value):'',value=>{if(value)track('device
 let client,timer,poll;
 const replies=new Map();
 function deviceCommand(request,reply,target=active.value){
+ if(demoMode&&target){const data=demoDevices[target.model].command(request.action,request.params);Object.assign(states[deviceKey(target)]||={},demoDevices[target.model].state);reply({code:request.action.endsWith('.get')?'ok':'accepted',data});return;}
  if(!connected.value||!target){reply({code:'offline',message:'请先连接 MQTT'});return;}
  if(target.version==='v1'){legacyRequest(request,reply);return;}
  const signature=JSON.stringify([deviceKey(target),request.action,request.params||{}]);
@@ -52,9 +55,9 @@ const connectionOwner=()=>thirdParty.value?'guest':account.username;
 function manualDisconnect(){setAutoConnect(connectionOwner(),false);disconnect();}
 function manualConnect(){setAutoConnect(connectionOwner(),true);connect();}
 function disconnect(){busy.value=false;for(const {reply,timeout} of replies.values()){clearTimeout(timeout);reply({code:'offline',message:'MQTT 已断开'});}replies.clear();client?.end(true);client=null;connected.value=false;Object.keys(states).forEach(k=>delete states[k]);}
-function subscribe(){if(thirdParty.value)client?.subscribe(`phicomm/v2/${connection.username?userKey(connection.username):'local'}/discovery/+`,{qos:1});for(const d of list.value.filter(d=>!d.status||d.status==='active'))client?.subscribe(topics(d),{qos:1},(e,g)=>{if(e||g?.some(x=>x.qos===128))error.value='订阅被拒绝，请检查账号与设备归属';});}
+function subscribe(){if(demoMode)return;if(thirdParty.value)client?.subscribe(`phicomm/v2/${connection.username?userKey(connection.username):'local'}/discovery/+`,{qos:1});for(const d of list.value.filter(d=>!d.status||d.status==='active'))client?.subscribe(topics(d),{qos:1},(e,g)=>{if(e||g?.some(x=>x.qos===128))error.value='订阅被拒绝，请检查账号与设备归属';});}
 async function refresh(){try{list.value=(thirdParty.value?localDevices().map(d=>({...d,username:connection.username})):await api('/devices')).map(deviceEntry);if(!list.value.some(d=>deviceKey(d)===selected.value))selected.value=list.value[0]?deviceKey(list.value[0]):'';if(connected.value)subscribe();}catch(e){error.value=e.message;}}
-function connect(){if(!thirdParty.value&&connection.password)rememberLogin(account.username,connection.password);disconnect();error.value='';if(!/^wss?:\/\//.test(connection.host)){error.value='请输入 ws:// 或 wss:// 地址';return;}busy.value=true;
+function connect(){if(demoMode){connected.value=true;busy.value=false;for(const d of list.value)Object.assign(states[deviceKey(d)]||={},demoDevices[d.model].state);return;}if(!thirdParty.value&&connection.password)rememberLogin(account.username,connection.password);disconnect();error.value='';if(!/^wss?:\/\//.test(connection.host)){error.value='请输入 ws:// 或 wss:// 地址';return;}busy.value=true;
  client=mqtt.connect(connection.host,{username:connection.username,password:connection.password,clientId:'web_'+requestId(),connectTimeout:5000,reconnectPeriod:3000,clean:true});
  client.on('connect',()=>{connected.value=true;busy.value=false;subscribe();track('mqtt_connect',thirdParty.value?'/guest':'/');});
  client.on('close',()=>{connected.value=false;busy.value=false;});client.on('error',()=>{error.value='MQTT 连接失败，请检查地址、凭据和权限';busy.value=false;});
@@ -91,8 +94,8 @@ function legacyRequest({action,params={}},reply){
   reply({code:'accepted',data:{}});
  }catch(e){fail(e.message);}
 }
-function sendTo(d,action,params={}){if(!connected.value){error.value='请先连接 MQTT';return;}const id=requestId(),s=states[deviceKey(d)] ||= {}; (s.pending ||= {})[id]=action;const c=command(d,{action,params,request_id:id});client.publish(c.topic,c.payload,{qos:1,retain:false},e=>{if(e)error.value='发送失败';});}
-async function changeMode(){disconnect();notice.value='';error.value='';if(thirdParty.value){Object.assign(connection,{host:`${location.protocol==='https:'?'wss':'ws'}://${location.host}/mqtt`,username:'',password:''},JSON.parse(localStorage.getItem('tmcp_broker')||'{}'));}else{const s=await api('/register/status');Object.assign(connection,{host:s.mqtt_ws_uri||`${location.protocol==='https:'?'wss':'ws'}://${location.host}/mqtt`,username:account.mqttUsername||account.username,password:account.password||savedPassword(account.username)});}await refresh();if(autoConnect(connectionOwner())&&connection.password)connect();}
+function sendTo(d,action,params={}){if(demoMode){Object.assign(states[deviceKey(d)]||={},demoDevices[d.model].state);return;}if(!connected.value){error.value='请先连接 MQTT';return;}const id=requestId(),s=states[deviceKey(d)] ||= {}; (s.pending ||= {})[id]=action;const c=command(d,{action,params,request_id:id});client.publish(c.topic,c.payload,{qos:1,retain:false},e=>{if(e)error.value='发送失败';});}
+async function changeMode(){disconnect();notice.value='';error.value='';if(thirdParty.value){Object.assign(connection,{host:`${location.protocol==='https:'?'wss':'ws'}://${location.host}/mqtt`,username:'',password:''},JSON.parse(localStorage.getItem('tmcp_broker')||'{}'));}else{const s=await api('/register/status');Object.assign(connection,{host:s.mqtt_ws_uri||`${location.protocol==='https:'?'wss':'ws'}://${location.host}/mqtt`,username:account.mqttUsername||account.username,password:account.password||savedPassword(account.username)});}await refresh();if(demoMode||(autoConnect(connectionOwner())&&connection.password))connect();}
 async function add(){try{const d=deviceEntry({...addForm,version:addForm.model==='tc1'?addForm.version:'v2',...(thirdParty.value?{username:connection.username}:{})});if(thirdParty.value){if(list.value.some(x=>x.mac===d.mac))throw Error('设备已存在');localStorage.setItem('phicomm_devices',JSON.stringify([...list.value,d]));}else await api('/devices',{method:'POST',body:JSON.stringify(d)});await refresh();addForm.mac='';}catch(e){error.value=e.message;}}
 async function remove(d){if(!confirm(`移除 ${d.mac}？`))return;try{client?.unsubscribe(topics(d));if(thirdParty.value)localStorage.setItem('phicomm_devices',JSON.stringify(list.value.filter(x=>deviceKey(x)!==deviceKey(d))));else await api(`/devices/${d.namespace?'scoped/':''}${d.mac}${d.namespace?'?mqtt_username='+encodeURIComponent(d.mqtt_username||d.username):''}`,{method:'DELETE'});await refresh();}catch(e){error.value=e.message;}}
 async function logout(){try{await api('/auth/logout',{method:'POST',body:'{}'});}catch(e){error.value=e.message;}account.username=null;account.mqttUsername=null;account.isAdmin=false;account.aliases=[];account.password='';forgetLogin();disconnect();await router.replace('/login');}

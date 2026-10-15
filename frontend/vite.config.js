@@ -30,6 +30,7 @@ function devicePages() {
 }
 
 export default defineConfig({
+  base: process.env.VITE_DEMO === '1' ? './' : '/',
   plugins: [vue(), devicePages()],
   server: {
     port: 3000,
