@@ -99,6 +99,8 @@ func readSecret(path string) (string, error) {
 func digest(s string) string { h := sha256.Sum256([]byte(s)); return hex.EncodeToString(h[:]) }
 func routes() http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("/api/analytics/event", handleAnalyticsEvent)
+	mux.HandleFunc("/api/admin/analytics", adminAuth(handleAnalytics))
 	mux.HandleFunc("/api/register", handleRegister)
 	mux.HandleFunc("/api/register/status", handleRegisterStatus)
 	mux.HandleFunc("/api/register/verify", handleVerifyEmail)

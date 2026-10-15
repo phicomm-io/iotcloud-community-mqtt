@@ -1,4 +1,6 @@
 <script setup>
+import AdminAnalytics from "../components/AdminAnalytics.vue";
+import ThemeToggle from "../components/ThemeToggle.vue";
 import { ref, onMounted, onBeforeUnmount, watch } from "vue";
 import { useRouter } from "vue-router";
 import { api, account, refreshAccountRole } from "../account";
@@ -88,12 +90,12 @@ function bind() {
 </script>
 <template>
   <main class="console-page">
-    <h1>账号与设备管理</h1>
-    <RouterLink to="/">返回控制台</RouterLink>
+    <header class="topbar console-topbar"><div class="brand"><span class="kind">MQTT 管理平台</span><h1>账号与设备管理</h1></div><nav class="console-nav"><ThemeToggle/><RouterLink class="btn" to="/">返回控制台</RouterLink></nav></header>
     <p class="error" role="alert">{{ message }}</p>
     <template v-if="account.isAdmin">
       <p class="helper-text">当前账号：{{ account.username }} · 管理员。与设备控制台、MQTT 使用同一登录账号。</p>
-      <button @click="run(async () => {})">刷新</button>
+      <AdminAnalytics/>
+      <button @click="run(async () => {})">刷新账号与设备</button>
       <section class="card">
         <h2>账号</h2>
         <form @submit.prevent="addUser">
@@ -106,12 +108,12 @@ function bind() {
               required /></label
           ><button>创建账号</button>
         </form>
-        <ul>
+        <ul class="admin-list">
           <li v-for="u in users" :key="u.username">
-            {{ u.username }} · {{ u.status }} · {{ u.role === "admin" ? "管理员" : "普通用户" }}
+            <div class="admin-item-copy"><b>{{ u.username }}</b><p class="help">{{ u.status === 'active' ? '已启用' : u.status }} · {{ u.role === "admin" ? "管理员" : "普通用户" }}</p></div><div class="admin-actions">
             <button @click="setRole(u)">{{ u.role === "admin" ? "撤销管理权限" : "设为管理员" }}</button>
             <button @click="reset(u.username)">重置密码</button>
-            <button @click="removeUser(u.username)">删除</button>
+            <button class="btn danger" @click="removeUser(u.username)">删除</button></div>
           </li>
         </ul>
       </section>
@@ -130,21 +132,19 @@ function bind() {
           ><label>MAC<input v-model="mac" required /></label
           ><label
             >型号<select v-model="model" aria-label="型号">
-              <option value="tc1">tc1(a1)</option>
-              <option>m1</option>
-              <option>a1</option>
+              <option value="tc1">TC1</option>
+              <option value="m1">M1</option>
+              <option value="a1">A1</option>
             </select></label
-          ><select v-if="model === 'tc1'" v-model="version">
+          ><label v-if="model === 'tc1'">协议<select v-model="version">
             <option value="v1">Legacy</option>
-            <option value="v2">TMCP</option></select
+            <option value="v2">TMCP</option></select></label
           ><button>绑定</button>
         </form>
-        <ul>
+        <ul class="admin-list">
           <li v-for="d in devices" :key="deviceKey(d)">
-            {{ d.username }} · {{ modelName(d.model) }} · {{ d.mac }} ·
-            {{ d.version }} · {{ d.status }}
-            <span>{{ d.namespace ? "账号主题" : "旧主题" }}</span>
-            <button @click="removeDevice(d)">解绑</button>
+            <div class="admin-item-copy"><b>{{ modelName(d.model) }} · {{ d.mac }}</b><p class="help">{{ d.username }} · {{ d.version === 'v1' ? 'Legacy' : 'TMCP' }} · {{ d.status === 'active' ? '已启用' : d.status }} · {{ d.namespace ? "账号主题" : "旧主题" }}</p></div>
+            <button class="btn danger" @click="removeDevice(d)">解绑</button>
           </li>
         </ul>
       </section>
@@ -160,10 +160,10 @@ function bind() {
             )
           "
         >
-          <select v-model="level">
+          <label>注册方式<select v-model="level">
             <option :value="0">关闭注册</option>
             <option :value="1">开放注册</option>
-            <option :value="2">邮箱验证</option></select
+            <option :value="2">邮箱验证</option></select></label
           ><label>联系信息<input v-model="contact" /></label
           ><button>保存</button>
         </form>

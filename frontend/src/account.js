@@ -1,4 +1,5 @@
 import { reactive } from "vue";
+import {forgetLogin} from "./connectionPreferences";
 export const account = reactive({
   username: null,
   mqttUsername: null,
@@ -21,6 +22,7 @@ export async function api(path, options = {}) {
       account.aliases = [];
       account.isAdmin = false;
       account.password = "";
+      forgetLogin();
       window.dispatchEvent(new Event("phicomm-session-expired"));
     }
     if (response.status === 403 && path.startsWith("/admin") && data.error === "没有管理权限") account.isAdmin = false;
