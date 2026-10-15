@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -51,7 +52,11 @@ func (a *Application) bootstrapAdmin() error {
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
-	password, err := readSecret(cfg.AdminPasswordFile)
+	rawPassword, err := os.ReadFile(cfg.AdminPasswordFile)
+	password := strings.TrimSpace(string(rawPassword))
+	if err == nil && (len(password) < 6 || len(password) > 256) {
+		err = errors.New("admin password must be 6-256 bytes")
+	}
 	if err != nil {
 		return err
 	}

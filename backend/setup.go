@@ -125,14 +125,23 @@ func setupCommand(command string, args []string) error {
 		b.Clients = append(b.Clients, c)
 	}
 	for _, d := range devices {
-		role := "device_" + d.MAC
-		b.Roles = append(b.Roles, bootstrapRole{role, rulesFor(d)})
+		role := deviceRole(d)
+		rules := rulesFor(d)
+		if d.Namespace != "" {
+			rules = scopeRules(d)
+		}
+		b.Roles = append(b.Roles, bootstrapRole{role, rules})
 		for i := range b.Clients {
 			if b.Clients[i].Username == d.Username {
 				b.Clients[i].Roles = append(b.Clients[i].Roles, map[string]interface{}{"rolename": role, "priority": 1})
 			}
 		}
-		if _, err = tx.Exec("INSERT INTO devices(mac,username,model,version,status) VALUES(?,?,?,?,'active')", d.MAC, d.Username, d.Model, d.Version); err != nil {
+		if d.Namespace != "" {
+			_, err = tx.Exec("INSERT INTO scoped_devices(username,mqtt_username,mac,model,version,status) VALUES(?,?,?,?,?,'active')", d.Username, d.MQTTUsername, d.MAC, d.Model, d.Version)
+		} else {
+			_, err = tx.Exec("INSERT INTO devices(mac,username,model,version,status) VALUES(?,?,?,?,'active')", d.MAC, d.Username, d.Model, d.Version)
+		}
+		if err != nil {
 			return err
 		}
 	}
@@ -289,13 +298,24 @@ func parseLegacy(passwdPath, aclPath string) (map[string]bootstrapClient, []Devi
 			return nil, nil, fmt.Errorf("invalid MAC on ACL line %d", n+1)
 		}
 		mac = normalizeMAC(mac)
-		version := "community"
+		version := "v2"
 		if model == "tc1" {
-			version = "v2"
+			version = "v1"
 		}
 		d := Device{MAC: mac, Model: model, Version: version, Status: "active", Username: owner}
-		if old, ok := found[mac]; ok && (old.Username != owner || old.Model != model) {
-			return nil, nil, fmt.Errorf("conflicting ownership/model on ACL line %d", n+1)
+		if old, ok := found[mac]; ok {
+			if old.Username != owner || (old.Model != model && old.Model != "tc1" && model != "tc1") {
+				return nil, nil, fmt.Errorf("conflicting ownership/model on ACL line %d", n+1)
+			}
+			// The old console registered every model under the generic TC1 root.
+			// Explicit same-owner M1/A1 entries are authoritative over those stubs.
+			if old.Model != "tc1" && model == "tc1" {
+				continue
+			}
+		}
+		if model != "tc1" {
+			d.Namespace = "account"
+			d.MQTTUsername = owner
 		}
 		found[mac] = d
 	}

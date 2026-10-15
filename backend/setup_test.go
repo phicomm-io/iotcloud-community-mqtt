@@ -45,3 +45,37 @@ func TestBootstrapRefusesOverwrite(t *testing.T) {
 		t.Fatal("secret permissions", e)
 	}
 }
+
+func TestMigrationExplicitProductOverridesSameOwnerGenericStub(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "passwd")
+	acl := filepath.Join(dir, "acl")
+	c := newBootstrapClient("alice", "migration-password", nil)
+	os.WriteFile(p, []byte("alice:$7$100000$"+c.Salt+"$"+c.Password+"\n"), 0600)
+	for _, entries := range []string{
+		"topic readwrite device/ztc1/AABBCCDDEEFF/#\ntopic readwrite phicomm/m1/aabbccddeeff/#\n",
+		"topic readwrite phicomm/m1/aabbccddeeff/#\ntopic readwrite device/ztc1/AABBCCDDEEFF/#\n",
+	} {
+		os.WriteFile(acl, []byte("user alice\n"+entries), 0600)
+		users, devices, err := parseLegacy(p, acl)
+		if err != nil || len(devices) != 1 {
+			t.Fatal(devices, err)
+		}
+		d := devices[0]
+		if d.Model != "m1" || d.Version != "v2" || d.Namespace != "account" || d.MQTTUsername != "alice" {
+			t.Fatal(d)
+		}
+		if users["alice"].Password != c.Password {
+			t.Fatal("hash changed")
+		}
+	}
+	os.WriteFile(acl, []byte("user alice\ntopic readwrite phicomm/m1/aabbccddeeff/#\ntopic readwrite phicomm/a1/aabbccddeeff/#\n"), 0600)
+	if _, _, err := parseLegacy(p, acl); err == nil {
+		t.Fatal("conflicting explicit products accepted")
+	}
+	os.WriteFile(acl, []byte("user alice\ntopic readwrite device/ztc1/AABBCCDDEEFF/#\n"), 0600)
+	_, devices, err := parseLegacy(p, acl)
+	if err != nil || devices[0].Version != "v1" {
+		t.Fatal("Legacy changed", err)
+	}
+}

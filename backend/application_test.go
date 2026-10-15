@@ -16,13 +16,15 @@ type fakeBroker struct {
 	roles     map[string]bool
 	attached  map[string]map[string]bool
 	passwords map[string]string
+	disabled  map[string]bool
+	acl       map[string][]Rule
 }
 
 func (b *fakeBroker) Authenticate(u, p string) error {
 	if b.fail {
 		return errUnavailable
 	}
-	if b.passwords[u] != p {
+	if b.disabled[u] || b.passwords[u] != p {
 		return errCredentials
 	}
 	return nil
@@ -50,6 +52,13 @@ func (b *fakeBroker) Command(c string, p map[string]interface{}) (json.RawMessag
 	case "deleteClient":
 		delete(b.passwords, u)
 		delete(b.attached, u)
+	case "disableClient":
+		if b.disabled == nil {
+			b.disabled = map[string]bool{}
+		}
+		b.disabled[u] = true
+	case "enableClient":
+		delete(b.disabled, u)
 	case "setClientPassword":
 		b.passwords[u] = p["password"].(string)
 	case "getRole":
@@ -58,8 +67,13 @@ func (b *fakeBroker) Command(c string, p map[string]interface{}) (json.RawMessag
 		}
 	case "createRole", "modifyRole":
 		b.roles[r] = true
+		if b.acl == nil {
+			b.acl = map[string][]Rule{}
+		}
+		b.acl[r], _ = p["acls"].([]Rule)
 	case "deleteRole":
 		delete(b.roles, r)
+		delete(b.acl, r)
 	case "addClientRole":
 		b.attached[u][r] = true
 	case "removeClientRole":

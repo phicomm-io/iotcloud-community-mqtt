@@ -98,7 +98,7 @@ func (b *DynamicBroker) watchDiscovery(handler func(string, []byte)) {
 	b.mu.Unlock()
 }
 func (b *DynamicBroker) subscribeDiscovery(c mqtt.Client) error {
-	return waitToken(c.Subscribe("phicomm/discovery/+/+", 1, func(_ mqtt.Client, m mqtt.Message) {
+	return waitToken(c.Subscribe("phicomm/v2/+/discovery/+", 1, func(_ mqtt.Client, m mqtt.Message) {
 		b.mu.Lock()
 		handler := b.discovery
 		b.mu.Unlock()
@@ -190,13 +190,13 @@ type Rule struct {
 
 func rulesFor(d Device) []Rule {
 	var topics []string
-	switch d.Model {
-	case "tc1":
+	switch {
+	case d.Version == "v2":
+		topics = []string{"phicomm/v2/" + userKey(topicUsername(d)) + "/" + d.Model + "/" + d.MAC + "/#"}
+	case d.Model == "tc1":
 		for _, id := range []string{d.MAC, strings.ToUpper(d.MAC), colonMAC(d.MAC), strings.ToUpper(colonMAC(d.MAC))} {
 			topics = append(topics, "device/ztc1/"+id+"/#", "homeassistant/+/"+id+"/#")
 		}
-	case "m1", "a1":
-		topics = []string{"phicomm/" + d.Model + "/" + d.MAC + "/#", "homeassistant/+/" + d.Model + "_" + d.MAC + "/#"}
 	}
 	rules := []Rule{}
 	for _, topic := range topics {

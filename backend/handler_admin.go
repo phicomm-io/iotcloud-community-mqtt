@@ -38,6 +38,10 @@ func handleUsers(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		req.Username = strings.TrimSpace(req.Username)
+		if err := validateUsername(req.Username); err != nil {
+			jsonError(w, err.Error(), 400)
+			return
+		}
 		if err := validateAccount(req.Username, req.Password); err != nil {
 			jsonError(w, err.Error(), 400)
 			return
@@ -104,7 +108,7 @@ func handleAdminDevices(w http.ResponseWriter, r *http.Request) {
 			jsonError(w, err.Error(), 400)
 			return
 		}
-		if d.Username == "" || reservedUser(d.Username) || d.Status != "" || d.Namespace != "" {
+		if d.Username == "" || reservedUser(d.Username) || d.Status != "" || (d.Namespace != "" || d.MQTTUsername != "") {
 			jsonError(w, "请选择有效账号", 400)
 			return
 		}

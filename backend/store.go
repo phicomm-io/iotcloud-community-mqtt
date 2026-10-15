@@ -30,12 +30,13 @@ func colonMAC(mac string) string {
 func isValidMAC(mac string) bool { return macRegex.MatchString(strings.TrimSpace(mac)) }
 
 type Device struct {
-	Namespace string `json:"namespace,omitempty"`
-	MAC       string `json:"mac"`
-	Model     string `json:"model"`
-	Version   string `json:"version"`
-	Status    string `json:"status"`
-	Username  string `json:"username,omitempty"`
+	Namespace    string `json:"namespace,omitempty"`
+	MAC          string `json:"mac"`
+	Model        string `json:"model"`
+	Version      string `json:"version"`
+	Status       string `json:"status"`
+	Username     string `json:"username,omitempty"`
+	MQTTUsername string `json:"mqtt_username,omitempty"`
 }
 
 func validateDevice(d *Device) error {
@@ -56,10 +57,10 @@ func validateDevice(d *Device) error {
 		}
 	case "m1", "a1":
 		if d.Version == "" {
-			d.Version = "community"
+			d.Version = "v2"
 		}
-		if d.Version != "community" {
-			return errors.New("M1/A1 协议必须为 community")
+		if d.Version != "v2" {
+			return errors.New("M1/A1 仅支持 TMCP")
 		}
 	default:
 		return errors.New("设备型号不支持")
@@ -82,8 +83,13 @@ func openStore(path string) (*Store, error) {
  CREATE TABLE IF NOT EXISTS devices(mac TEXT PRIMARY KEY,username TEXT NOT NULL REFERENCES users(username) ON DELETE CASCADE,model TEXT NOT NULL,version TEXT NOT NULL,status TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY,username TEXT NOT NULL REFERENCES users(username) ON DELETE CASCADE,expires INTEGER NOT NULL);
  CREATE TABLE IF NOT EXISTS scoped_devices(username TEXT NOT NULL REFERENCES users(username) ON DELETE CASCADE,mac TEXT NOT NULL,model TEXT NOT NULL,version TEXT NOT NULL,status TEXT NOT NULL,PRIMARY KEY(username,mac));
+ CREATE TABLE IF NOT EXISTS account_aliases(alias TEXT PRIMARY KEY,username TEXT NOT NULL REFERENCES users(username) ON DELETE CASCADE,kind TEXT NOT NULL CHECK(kind IN ('mqtt','email')),state TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY,value TEXT NOT NULL);`)
 	if err != nil {
+		db.Close()
+		return nil, err
+	}
+	if err = s.migrateScopedIdentities(); err != nil {
 		db.Close()
 		return nil, err
 	}
@@ -160,21 +166,14 @@ func (a *Application) syncDevice(d Device) error {
 	if err != nil {
 		return err
 	}
-	data, err := a.broker.Command("getClient", map[string]interface{}{"username": d.Username})
-	if err != nil {
+	if err = a.attachRole(d.Username, role); err != nil {
 		return err
-	}
-	if !hasRole(data, role) {
-		_, err = a.broker.Command("addClientRole", map[string]interface{}{"username": d.Username, "rolename": role})
-		if err != nil {
-			return err
-		}
 	}
 	_, err = a.store.Exec("UPDATE devices SET status='active' WHERE mac=?", d.MAC)
 	return err
 }
 func (a *Application) saveDevice(username string, d Device, update bool) error {
-	if d.Namespace != "" {
+	if d.Namespace != "" || d.MQTTUsername != "" {
 		return errors.New("账号主题只能通过 MQTT 声明自动发现")
 	}
 	if err := validateDevice(&d); err != nil {
@@ -246,7 +245,19 @@ func (a *Application) deleteUser(username string) error {
 	return a.syncDeleteUser(username)
 }
 func (a *Application) syncDeleteUser(username string) error {
-	_, err := a.broker.Command("deleteClient", map[string]interface{}{"username": username})
+	aliases, err := a.store.aliases(username)
+	if err != nil {
+		return err
+	}
+	for _, alias := range aliases {
+		if alias.Kind == "mqtt" {
+			_, e := a.broker.Command("deleteClient", map[string]interface{}{"username": alias.Name})
+			if e != nil && !notFound(e) {
+				return e
+			}
+		}
+	}
+	_, err = a.broker.Command("deleteClient", map[string]interface{}{"username": username})
 	if err != nil && !notFound(err) {
 		return err
 	}

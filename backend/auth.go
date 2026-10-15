@@ -147,26 +147,39 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	req.Username = strings.TrimSpace(req.Username)
 	app.mu.Lock()
 	defer app.mu.Unlock()
-	state, err := app.store.state(req.Username)
+	owner, principal, err := app.store.resolveAccount(req.Username)
+	if errors.Is(err, sql.ErrNoRows) && emailRegex.MatchString(req.Username) {
+		owner, principal, err = app.store.resolveAccount(strings.ToLower(req.Username))
+	}
+	if err != nil {
+		jsonError(w, errCredentials.Error(), 401)
+		return
+	}
+	state, err := app.store.state(owner)
 	if err != nil || (state != "active" && state != "pending") || reservedUser(req.Username) {
 		jsonError(w, errCredentials.Error(), 401)
 		return
 	}
-	if err = app.broker.Authenticate(req.Username, req.Password); err != nil {
+	if err = app.broker.Authenticate(principal, req.Password); err != nil {
 		operationError(w, err)
 		return
 	}
 	if state == "pending" {
-		if _, err = app.store.Exec("UPDATE users SET state='active' WHERE username=? AND state='pending'", req.Username); err != nil {
+		if _, err = app.store.Exec("UPDATE users SET state='active' WHERE username=? AND state='pending'", owner); err != nil {
 			operationError(w, err)
 			return
 		}
 	}
-	if err = createSession(w, req.Username); err != nil {
+	if err = createSession(w, owner); err != nil {
 		operationError(w, err)
 		return
 	}
-	jsonResp(w, map[string]interface{}{"username": req.Username, "is_admin": app.store.isAdmin(req.Username)})
+	info, err := app.store.accountInfo(owner)
+	if err != nil {
+		operationError(w, err)
+		return
+	}
+	jsonResp(w, info)
 }
 func handleLogout(w http.ResponseWriter, r *http.Request) {
 	if !method(w, r, "POST") {
@@ -184,7 +197,12 @@ func handleMe(w http.ResponseWriter, r *http.Request) {
 	if !method(w, r, "GET") {
 		return
 	}
-	jsonResp(w, map[string]interface{}{"username": currentUser(r), "is_admin": app.store.isAdmin(currentUser(r))})
+	info, err := app.store.accountInfo(currentUser(r))
+	if err != nil {
+		operationError(w, err)
+		return
+	}
+	jsonResp(w, info)
 }
 func handlePassword(w http.ResponseWriter, r *http.Request) {
 	if !method(w, r, "POST") {
@@ -224,8 +242,37 @@ func (a *Application) changePassword(user, password string) error {
 	if _, err = a.store.Exec("DELETE FROM sessions WHERE username=?", user); err != nil {
 		return err
 	}
-	_, err = a.broker.Command("setClientPassword", map[string]interface{}{"username": user, "password": password})
-	return err
+	aliases, err := a.store.aliases(user)
+	if err != nil {
+		return err
+	}
+	for _, alias := range aliases {
+		if alias.Kind == "mqtt" {
+			if _, err = a.store.Exec("UPDATE account_aliases SET state='password_pending' WHERE alias=?", alias.Name); err != nil {
+				return err
+			}
+			if _, err = a.broker.Command("disableClient", map[string]interface{}{"username": alias.Name}); err != nil {
+				return err
+			}
+		}
+	}
+	if _, err = a.broker.Command("setClientPassword", map[string]interface{}{"username": user, "password": password}); err != nil {
+		return err
+	}
+	for _, alias := range aliases {
+		if alias.Kind == "mqtt" {
+			if _, err = a.broker.Command("setClientPassword", map[string]interface{}{"username": alias.Name, "password": password}); err != nil {
+				return err
+			}
+			if _, err = a.broker.Command("enableClient", map[string]interface{}{"username": alias.Name}); err != nil {
+				return err
+			}
+			if _, err = a.store.Exec("UPDATE account_aliases SET state='active' WHERE alias=?", alias.Name); err != nil {
+				return err
+			}
+		}
+	}
+	return a.syncAccount(user)
 }
 func adminAuth(next http.HandlerFunc) http.HandlerFunc {
 	return userAuth(func(w http.ResponseWriter, r *http.Request) {
@@ -238,6 +285,8 @@ func adminAuth(next http.HandlerFunc) http.HandlerFunc {
 }
 func operationError(w http.ResponseWriter, err error) {
 	switch {
+	case errors.Is(err, errAccountName):
+		jsonError(w, err.Error(), 409)
 	case errors.Is(err, errLastAdmin):
 		jsonError(w, err.Error(), 409)
 	case errors.Is(err, errConflict):

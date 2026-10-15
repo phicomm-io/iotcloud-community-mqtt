@@ -12,6 +12,7 @@ type RegisterReq struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 	Code     string `json:"code,omitempty"`
+	Email    string `json:"email,omitempty"`
 }
 
 func reservedUser(u string) bool {
@@ -57,6 +58,13 @@ func (a *Application) register(user, password string) error {
 		return err
 	}
 	if state == "" {
+		available, e := a.store.nameAvailable(user)
+		if e != nil {
+			return e
+		}
+		if !available {
+			return errAccountName
+		}
 		if _, err = a.store.Exec("INSERT INTO users(username,state) VALUES(?,'pending')", user); err != nil {
 			return err
 		}
@@ -100,18 +108,20 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.Username = strings.TrimSpace(req.Username)
-	if level == 2 {
-		req.Username = strings.ToLower(req.Username)
+	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
+	if err := validateUsername(req.Username); err != nil {
+		jsonError(w, err.Error(), 400)
+		return
 	}
 	if err := validateAccount(req.Username, req.Password); err != nil {
 		jsonError(w, err.Error(), 400)
 		return
 	}
-	if level == 2 && (!emailRegex.MatchString(req.Username) || !verifyCode(req.Username, req.Code)) {
+	if level == 2 && (!emailRegex.MatchString(req.Email) || len(req.Email) > 254 || !verifyCode(req.Email, req.Code)) {
 		jsonError(w, "邮箱验证码错误或已过期", 400)
 		return
 	}
-	if err := app.register(req.Username, req.Password); err != nil {
+	if err := app.registerWithEmail(req.Username, req.Password, req.Email, level == 2); err != nil {
 		operationError(w, err)
 		return
 	}
