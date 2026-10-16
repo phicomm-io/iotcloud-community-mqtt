@@ -1,0 +1,8 @@
+[Unit]
+Description=Check MQTT HTTPS certificate twice daily
+[Timer]
+OnCalendar=*-*-* 03,15:30:00
+RandomizedDelaySec=3600
+Persistent=true
+[Install]
+WantedBy=timers.target

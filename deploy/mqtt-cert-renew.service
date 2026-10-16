@@ -1,0 +1,7 @@
+[Unit]
+Description=Renew MQTT public HTTPS certificate
+After=docker.service
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker run --rm -v /etc/letsencrypt:/etc/letsencrypt -v /var/lib/letsencrypt:/var/lib/letsencrypt -v /var/www/mqtt-acme:/var/www/mqtt-acme certbot/certbot:v4.0.0 renew --quiet
+ExecStartPost=/usr/sbin/nginx -s reload

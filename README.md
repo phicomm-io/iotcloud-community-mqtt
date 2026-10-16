@@ -190,3 +190,26 @@ allowed_origins:
 MQTT 密码默认使用注册密码。用户可在设置中输入网站当前密码，独立修改 MQTT 密码；修改网站密码不会影响设备 MQTT 连接。修改 MQTT 密码后须更新设备连接凭据，MQTT 别名同步使用新 MQTT 密码。已有账号首次成功登录时自动建立独立的网站密码哈希。
 
 接口：`POST /api/auth/mqtt-password`，需要登录和同源校验，JSON 为 `current_password`（网站密码）和 `password`（新 MQTT 密码，6–256 字节）。`/api/auth/password` 仅修改网站密码并撤销网站会话。
+
+## China / US 独立节点
+
+| 节点 | 网站 / API | 设备 MQTT | 浏览器 MQTT |
+| --- | --- | --- | --- |
+| China | https://mqtt.fjrcn.cn | mqtt.fjrcn.cn:1883 | wss://mqtt.fjrcn.cn/mqtt |
+| US | https://mqtt.fjrcn.com | mqtt.fjrcn.com:1883 | wss://mqtt.fjrcn.com/mqtt |
+
+平台顶部可选择节点。两个节点独立注册、登录和绑定设备，用户名相同也不会合并；不会复制账号、密码、设备、会话、数据库或 Broker 权限。设备需配置所选节点的 MQTT 主机与该节点账号。切换节点会重新加载页面、断开原 MQTT，并使用目标节点自己的登录状态。浏览器保存的会话与 MQTT 凭据也按后端来源隔离。
+
+新增节点时，在独立服务器创建新的 `runtime/` 并初始化，**不要从其他节点复制运行数据或 secrets**。
+`deploy/node.env.example` 提供 US 地址示例；使用独立 HTTPS 证书，按 `deploy/nginx-node.conf.example` 代理本机 19001 端口。域名使用 DNS-only 记录，设备 MQTT TCP 1883 不经过 Cloudflare HTTP 代理。
+
+每个后端设置 `cookie_secure: true`，并在 `allowed_origins` 中逐项允许可信前端：
+
+```yaml
+allowed_origins:
+  - https://phicomm-io.github.io
+  - https://mqtt.fjrcn.cn
+  - https://mqtt.fjrcn.com
+```
+
+`public_url` / `PUBLIC_URL` 必须为当前节点自己的地址。独立数据库与 Broker 才是数据隔离边界，CORS 仅允许前端选择访问哪个节点。US 初始管理员随机密码仅存于服务器的 `runtime/secrets/admin-password`，不会写入仓库。
