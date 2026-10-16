@@ -1,0 +1,8 @@
+**
+!frontend.lock.json
+!scripts/
+!scripts/frontend_release.py
+!nginx/
+!nginx/nginx.conf
+!web/
+!web/Dockerfile

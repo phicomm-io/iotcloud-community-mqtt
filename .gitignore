@@ -29,3 +29,7 @@ backend/mqtt_mgr
 .env
 test-results/
 playwright-report/
+
+/build/
+__pycache__/
+*.py[cod]

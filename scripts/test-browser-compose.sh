@@ -2,6 +2,14 @@
 # Full local Compose/browser verification with private temporary data and random ports.
 set -eu
 project_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+frontend_bundle=$(python3 "$project_root/scripts/frontend_release.py")
+frontend_src="$frontend_bundle/source/frontend"
+npm --prefix "$frontend_src" ci
+if [ "${CI:-}" = true ]; then
+ (cd "$frontend_src" && npx playwright install --with-deps chromium)
+else
+ (cd "$frontend_src" && npx playwright install chromium)
+fi
 test_runtime=$(mktemp -d)
 test_project="phicomm-browser-$$"
 compose() { HTTP_PORT=127.0.0.1:0 MQTT_PORT=127.0.0.1:0 PUBLIC_URL= MQTT_URI= MQTT_WS_URI= docker compose -p "$test_project" -f "$project_root/docker-compose.yaml" -f "$test_runtime/override.yaml" "$@"; }
@@ -38,4 +46,4 @@ until curl -fsS "http://$test_address/api/register/status" >/dev/null 2>&1; do
  sleep 1
 done
 export PHICOMM_WEB_URL="http://$test_address" PHICOMM_MQTT_WS="ws://$test_address/mqtt" PHICOMM_TEST_ADMIN_FILE="$test_runtime/runtime/secrets/admin-password"
-(cd "$project_root/frontend" && npx playwright test)
+(cd "$frontend_src" && npx playwright test)
