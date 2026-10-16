@@ -198,7 +198,7 @@ MQTT 密码默认使用注册密码。用户可在设置中输入网站当前密
 | China | https://mqtt.fjrcn.cn | mqtt.fjrcn.cn:1883 | wss://mqtt.fjrcn.cn/mqtt |
 | US | https://mqtt.fjrcn.com | mqtt.fjrcn.com:1883 | wss://mqtt.fjrcn.com/mqtt |
 
-平台顶部可选择节点。两个节点独立注册、登录和绑定设备，用户名相同也不会合并；不会复制账号、密码、设备、会话、数据库或 Broker 权限。设备需配置所选节点的 MQTT 主机与该节点账号。切换节点会重新加载页面、断开原 MQTT，并使用目标节点自己的登录状态。浏览器保存的会话与 MQTT 凭据也按后端来源隔离。
+登录和注册页顶部可选择节点；登录后请进入“设置 → MQTT 连接 → 平台节点”切换。两个节点独立注册、登录和绑定设备，用户名相同也不会合并；不会复制账号、密码、设备、会话、数据库或 Broker 权限。设备需配置所选节点的 MQTT 主机与该节点账号。切换节点会重新加载页面、断开原 MQTT，并使用目标节点自己的登录状态。浏览器保存的会话与 MQTT 凭据也按后端来源隔离。
 
 新增节点时，在独立服务器创建新的 `runtime/` 并初始化，**不要从其他节点复制运行数据或 secrets**。
 `deploy/node.env.example` 提供 US 地址示例；使用独立 HTTPS 证书，按 `deploy/nginx-node.conf.example` 代理本机 19001 端口。域名使用 DNS-only 记录，设备 MQTT TCP 1883 不经过 Cloudflare HTTP 代理。
