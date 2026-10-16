@@ -23,6 +23,16 @@ docker compose up -d mosquitto backend nginx
 
 ## 验证
 
+可独立启动设备 WebUI 模拟器，不需要设备或 MQTT Broker：
+
+```sh
+SIM_HOST=0.0.0.0 SIM_PORT=25174 node scripts/device-simulator.mjs
+```
+
+访问 `/tc1`、`/a1` 或 `/m1` 打开对应设备页面。模拟器提供设备名称恢复、TC1 插座控制、A1 风速与光效配置、M1 亮度控制；A1 光效设置页可调节速度并查看连续光环预览。
+
+每种型号共用一份内存状态，刷新页面保留配置，重启模拟器后恢复默认值。模拟风速立即生效，用于检查灯光反馈，不模拟电机升降速或实体硬件时序。
+
 ```sh
 (cd backend && go test ./...)
 (cd frontend && npm ci && npm test && npm run build && npx playwright install chromium)
