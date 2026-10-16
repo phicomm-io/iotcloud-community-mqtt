@@ -1,4 +1,4 @@
-module github.com/FUjr/phicomm-community-mqtt/backend
+module github.com/phicomm-io/phicomm-community-mqtt/backend
 
 go 1.24.0
 
