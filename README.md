@@ -6,8 +6,7 @@
 
 本仓库原为固件仓库的 `platform/` 子目录，2026 年再次分离为独立仓库，历史由原
 [phicomm-community-mqtt](https://github.com/FUjr/phicomm-community-mqtt) 与固件仓库的 `platform/` 合并而成。
-设备的 WebUI 源文件（`common/web/`、`TC1/http_server/web/`、`A1/web/`、`M1/web/`）在此以快照形式随仓库提供，
-以便独立构建；上游仍在固件仓库维护，同步方式见 [设备 WebUI 快照](#设备-webui-快照)。
+设备 WebUI、Vue 管理平台和 demo 的唯一源码在 [phicomm-community-frontend](https://github.com/phicomm-io/phicomm-community-frontend)。本仓库只保留服务端、Broker、nginx 和部署配置，通过 `frontend.lock.json` 固定前端完整 commit 与 Release SHA-256。平台镜像从该 Release 读取预构建 `platform/`，不从 main 或 latest 构建。
 
 ## 账号与设备
 
@@ -106,45 +105,28 @@ SIM_HOST=0.0.0.0 SIM_PORT=25174 node scripts/device-simulator.mjs
 
 ```sh
 (cd backend && go test -race ./... && go vet ./...)
-(cd frontend && npm ci && npm test && npm run build)
+python3 scripts/frontend_release.py
 scripts/test-integration.sh
 scripts/test-browser-compose.sh
 ```
 
 集成测试使用临时 Broker 和随机本机端口，结束后自动清理测试容器与数据。
 
-浏览器脚本自动创建独立 Broker、临时数据及随机端口，退出后清理。生产快照验证使用 `frontend/tests/tmcp-review.spec.js`，凭据通过私有文件环境变量提供；不得在公开 CI 使用生产快照。
+浏览器脚本自动创建独立 Broker、临时数据及随机端口，退出后清理。生产快照验证使用 前端 Release 中的 `source/frontend/tests/tmcp-review.spec.js`，凭据通过私有文件环境变量提供；不得在公开 CI 使用生产快照。
 
 前端开发服务支持 `API_TARGET` 和 `MQTT_TARGET`：
 
 ```sh
-cd frontend
-API_TARGET=http://127.0.0.1:8080 MQTT_TARGET=ws://127.0.0.1:9001 npm run dev -- --host 127.0.0.1 --port 25173
-# 另一个终端
-npx playwright install chromium
-PHICOMM_WEB_URL=http://127.0.0.1:25173 PHICOMM_MQTT_WS=ws://127.0.0.1:9001 npx playwright test
+git clone https://github.com/phicomm-io/phicomm-community-frontend.git
+cd phicomm-community-frontend
+npm ci --prefix frontend
+npm --prefix frontend run dev
 ```
 
 浏览器测试会创建测试账号，请使用独立测试数据目录。`build.sh` 用于构建本地镜像。
 
-## 设备 WebUI 快照
+## 更新前端版本
 
-平台复用固件的设备 WebUI 源文件，不 fork 设备界面。以下目录是设备端的快照副本：
+在前端仓库修改并提交代码，等待对应 `frontend-<完整commit>` Release。将该 Release 的 `frontend.lock.json` 复制到此仓库，执行 `python3 scripts/frontend_release.py` 和 `./build.sh`，测试后提交锁文件。离线下载可用 `--archive` 指定压缩包，仍校验 SHA-256。
 
-| 目录 | 上游 | 用途 |
-| --- | --- | --- |
-| `common/web/` | 固件仓库同名目录 | 公共样式、i18n、服务层与 `page.py` |
-| `TC1/http_server/web/` | 固件仓库同名目录 | TC1 首页与资源 |
-| `A1/web/`、`M1/web/` | 固件仓库同名目录 | A1/M1 首页 |
-
-- `frontend/vite.config.js` 复刻 `common/web/page.py` 的 `@include` 展开顺序，构建时读取这些快照生成设备首页组件。
-- `scripts/sync-design.py` 从 `common/web/style.css` 提取设计令牌写入 `frontend/src/device-tokens.css`；CI 用 `git diff --exit-code` 强制二者一致。**不要手改 `device-tokens.css`。**
-- 上游设备界面变更后，需要把对应文件复制过来并重跑 `sync-design.py`。
-
-## 相关链接
-
-- [固件仓库](https://github.com/phicomm-io/phicomm-community-firmware)
-- [项目主页与历史版本归档](https://phicomm-io.github.io/)
-- [迁移设计、验证与回退](docs/MIGRATION_TMCP.md)
-- [TMCP 主题与接口](docs/MQTT_ACCOUNT_TOPICS.md)
-- [统一账号与鉴权](docs/ACCOUNT_SECURITY.md)
+浏览器集成测试 `scripts/test-browser-compose.sh` 从同一 Release 的 `source/frontend/` 安装测试依赖，针对独立临时后端测试；源码开发、样式同步、前端单元测试归前端仓库管理。`node scripts/device-simulator.mjs` 继续启动锁定版本的设备模拟器。

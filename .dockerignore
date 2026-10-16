@@ -12,3 +12,5 @@ mosquitto/config/passwd
 mosquitto/config/acl
 backend/*.db*
 backend/mqtt_mgr
+
+build/

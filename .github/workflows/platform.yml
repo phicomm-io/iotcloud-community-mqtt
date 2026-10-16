@@ -21,14 +21,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
       - name: Test account migrations and service
         run: cd backend && go test ./...
-      - name: Test protocol and frontend build
-        run: cd frontend && npm ci && npm test && npm run build && npx playwright install --with-deps chromium
-      - name: Verify shared design tokens
-        run: python3 scripts/sync-design.py && git diff --exit-code -- frontend/src/device-tokens.css
+      - name: Verify pinned frontend release
+        run: python3 scripts/frontend_release.py
       - name: Test real Broker migration and persistence
         run: scripts/test-integration.sh
       - name: Test isolated Broker and browser flows
