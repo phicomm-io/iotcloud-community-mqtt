@@ -1,6 +1,6 @@
 /* The platform uses the device WebUI's actual stylesheet, including tokens,
    cards, fields, segmented controls, typography and light/dark colors. */
-@import '../../../common/web/style.css';
+@import '../../common/web/style.css';
 body{max-width:1360px}
 button,.primary-button,.secondary-button,.quiet-button,.guest-entry{font:inherit;font-size:14px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:8px 16px;border-radius:var(--radius-s);border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;text-decoration:none;width:auto}
 button:hover,.guest-entry:hover{background:var(--surface-muted)}button:disabled{opacity:.55;cursor:not-allowed}.primary-button{background:var(--accent);color:var(--accent-text);border-color:transparent}

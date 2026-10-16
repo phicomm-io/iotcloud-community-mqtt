@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const pages = {
   tc1: 'TC1/http_server/web/index.html',
   a1: 'A1/web/index.html',

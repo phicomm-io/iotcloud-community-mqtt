@@ -1,9 +1,8 @@
 **
-!platform/
-!platform/frontend/
-!platform/frontend/**
-!platform/nginx/
-!platform/nginx/nginx.conf
+!frontend/
+!frontend/**
+!nginx/
+!nginx/nginx.conf
 !common/
 !common/web/
 !common/web/**

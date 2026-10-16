@@ -1,0 +1,35 @@
+name: Test TMCP platform
+on:
+  pull_request:
+    paths: ['**', '!**.md']
+  push:
+    branches: [main]
+    paths: ['**', '!**.md']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  platform:
+    name: Platform host and browser tests
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache-dependency-path: backend/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Test account migrations and service
+        run: cd backend && go test ./...
+      - name: Test protocol and frontend build
+        run: cd frontend && npm ci && npm test && npm run build && npx playwright install --with-deps chromium
+      - name: Verify shared design tokens
+        run: python3 scripts/sync-design.py && git diff --exit-code -- frontend/src/device-tokens.css
+      - name: Test real Broker migration and persistence
+        run: scripts/test-integration.sh
+      - name: Test isolated Broker and browser flows
+        run: scripts/test-browser-compose.sh

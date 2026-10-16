@@ -39,8 +39,8 @@ services:
   nginx:
     image: phicomm-community-mqtt-web:local
     build:
-      context: ..
-      dockerfile: platform/frontend/Dockerfile
+      context: .
+      dockerfile: frontend/Dockerfile
     restart: unless-stopped
     ports:
       - "${HTTP_PORT:-80}:80"
