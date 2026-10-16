@@ -8,6 +8,8 @@ admin_password_file: /run/secrets/admin-password
 # HTTPS deployments should set the exact public URL and cookie_secure: true.
 public_url: ""
 cookie_secure: false
+# Exact origins of independent static frontends, e.g. https://your-account.github.io.
+allowed_origins: []
 # Backend is reachable only through the Compose nginx proxy.
 trust_proxy: true
 register_level: 1

@@ -22,6 +22,7 @@ type SMTPConfig struct {
 	TLS      bool   `yaml:"tls"`
 }
 type Config struct {
+	AllowedOrigins          []string   `yaml:"allowed_origins"`
 	DBPath                  string     `yaml:"db_path"`
 	BrokerURL               string     `yaml:"broker_url"`
 	BrokerCA                string     `yaml:"broker_ca"`
@@ -133,6 +134,24 @@ func routes() http.Handler {
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { jsonError(w, "接口不存在", 404) })
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
+		origin := r.Header.Get("Origin")
+		w.Header().Add("Vary", "Origin")
+		if origin != "" && allowedFrontend(origin) {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Expose-Headers", "X-IotCloud-Session")
+		}
+		if r.Method == http.MethodOptions {
+			if !allowedFrontend(origin) {
+				jsonError(w, "请求来源不允许", 403)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
 		mux.ServeHTTP(w, r)

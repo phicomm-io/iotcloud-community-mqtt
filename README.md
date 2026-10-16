@@ -169,3 +169,18 @@ docker compose -f docker-compose.yaml -f compose.ghcr.yaml up -d --no-build --no
 Release 附带前端锁文件；demo 的 `release.json` 记录平台标签、平台 commit 和前端 commit。
 
 官网通过公开 Release 读取前端，不保存跨仓库访问令牌。同步只替换平台 demo，保留官网、指南、设备 demo 和固件归档。
+
+
+
+## 独立静态前端（IotCloud）
+
+新版独立前端支持 GitHub Pages / 静态托管及 PWA。跨域前端在 `backend/config.yaml` 增加：
+
+```yaml
+allowed_origins:
+  - https://your-account.github.io
+```
+
+来源必须是精确的 scheme + host（可带端口），不含路径或末尾 `/`，不要使用通配符。前端配置后端根域和该后端配套的 MQTT WSS 地址。后端保留 Cookie 登录，同时支持同一可撤销会话的 Bearer 传递；白名单来源可读取 `X-IotCloud-Session`，不依赖第三方 Cookie。来源白名单并不授予账号或 MQTT 权限。公网部署使用 HTTPS / WSS。
+
+前端通过 frontend.lock.json 固定到经过校验的独立 Release；相邻前端工作区不会自动进入镜像。

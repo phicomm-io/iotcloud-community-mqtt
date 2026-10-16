@@ -53,6 +53,7 @@ func sameOrigin(w http.ResponseWriter, r *http.Request) bool {
 	if expected != "" {
 		valid = origin == strings.TrimRight(expected, "/")
 	}
+	valid = valid || allowedFrontend(origin)
 	if !valid {
 		jsonError(w, "请求来源不允许", 403)
 	}
@@ -60,13 +61,13 @@ func sameOrigin(w http.ResponseWriter, r *http.Request) bool {
 }
 func userAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie("phicomm_session")
-		if err != nil {
+		token := requestSession(r)
+		if token == "" {
 			jsonError(w, "请先登录", 401)
 			return
 		}
 		var user string
-		err = app.store.QueryRow("SELECT s.username FROM sessions s JOIN users u ON s.username=u.username WHERE s.token=? AND s.expires>? AND u.state='active'", digest(cookie.Value), time.Now().Unix()).Scan(&user)
+		err := app.store.QueryRow("SELECT s.username FROM sessions s JOIN users u ON s.username=u.username WHERE s.token=? AND s.expires>? AND u.state='active'", digest(token), time.Now().Unix()).Scan(&user)
 		if err != nil {
 			jsonError(w, "会话已失效，请重新登录", 401)
 			return
@@ -91,6 +92,7 @@ func createSession(w http.ResponseWriter, user string) error {
 		return err
 	}
 	http.SetCookie(w, sessionCookie(token, 86400))
+	w.Header().Set("X-IotCloud-Session", token)
 	return nil
 }
 
@@ -185,8 +187,7 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 	if !method(w, r, "POST") {
 		return
 	}
-	cookie, _ := r.Cookie("phicomm_session")
-	if _, err := app.store.Exec("DELETE FROM sessions WHERE token=?", digest(cookie.Value)); err != nil {
+	if _, err := app.store.Exec("DELETE FROM sessions WHERE token=?", digest(requestSession(r))); err != nil {
 		operationError(w, err)
 		return
 	}
