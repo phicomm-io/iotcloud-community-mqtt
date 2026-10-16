@@ -39,7 +39,7 @@ function makeState(model) {
   if (model === 'a1') return {
     ...common, ...sensors, model: 'a1', fan_on: true, requested_fan_on: true,
     fan_ready: true, panel_ready: true, child_lock: false, speed: 45,
-    percentage: 45, requested_speed: 45, applied_speed: 45, led_enabled: true,
+    percentage: 45, requested_speed: 45, applied_speed: 45, touch_active: false, led_enabled: true,
     led_visible: true, led_always_on: true, brightness: 255, red: 30, green: 150, blue: 255,
     light_effect: { effect: 0, segments: 1, follow_fan: 0, quality_pm: 35, quality_hcho: 0.08,
       segment: [{ source: 0, display: 2, minimum: -10, maximum: 50, suitable_low: 18, suitable_high: 26,
@@ -82,10 +82,12 @@ function apply(state, action, params = {}) {
     if (params.enabled !== undefined || params.on !== undefined) state.fan_on = !!(params.enabled ?? params.on);
     if (params.speed !== undefined || params.percentage !== undefined) {
       const speed = Math.max(0, Math.min(100, Number(params.speed ?? params.percentage)));
-      state.speed = state.requested_speed = speed;
+      state.fan_on = speed !== 0;
+      if (speed) state.speed = state.requested_speed = speed;
     }
     state.requested_fan_on = state.fan_on;
-    state.percentage = state.applied_speed = state.fan_on ? state.speed : 0;
+    state.percentage = state.fan_on ? state.speed : 0;
+    if (!state.fan_on) state.applied_speed = 0;
   }
   else if (action === 'fan.percentage.set') state.percentage = state.speed = Number(params.percentage) || state.speed;
   else if (action === 'light.set') {
@@ -102,7 +104,19 @@ function apply(state, action, params = {}) {
 }
 
 function render(model) {
-  return execFileSync('python3', ['common/web/page.py', pages[model]], { cwd: root, encoding: 'utf8' });
+  const html = execFileSync('python3', ['common/web/page.py', pages[model]], { cwd: root, encoding: 'utf8' });
+  if (model !== 'a1') return html;
+  return html.replace('</body>', `<aside class="card stack" style="margin-top:24px"><h2>模拟实体触摸条</h2>
+<p class="help">按住并拖动时显示目标速度；松手后显示当前 PWM 输出。</p>
+<input id="simTouch" aria-label="模拟实体触摸条" type="range" min="1" max="100" value="45">
+<output id="simFanOutput"></output></aside><script>
+(()=>{const bar=document.getElementById('simTouch'),out=document.getElementById('simFanOutput');let active=false,queue=Promise.resolve();
+function send(){const data={active,speed:Number(bar.value)};queue=queue.then(()=>fetch('/sim/a1/touch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})).then(()=>UI.reload()).catch(console.error);}
+bar.addEventListener('pointerdown',()=>{active=true;send();});bar.addEventListener('input',()=>{active=true;send();});
+for(const event of ['pointerup','pointercancel','blur'])bar.addEventListener(event,()=>{if(active){active=false;send();}});
+window.addEventListener('pointerup',()=>{if(active){active=false;send();}});
+setInterval(()=>{const s=UI.state;if(s){out.textContent='目标 '+s.requested_speed+'% · 当前 PWM '+s.applied_speed+'% · '+(s.touch_active?'正在触摸':'已松手');if(!active)bar.value=s.requested_speed;}},100);
+})();</script></body>`);
 }
 
 const server = createServer((req, res) => {
@@ -121,13 +135,25 @@ const server = createServer((req, res) => {
     res.end(render(model));
     return;
   }
-  if (req.method === 'POST' && url.pathname === '/api/v1/command') {
+  if (req.method === 'POST' && (url.pathname === '/api/v1/command' || url.pathname === '/sim/a1/touch')) {
     let body = '';
     req.setEncoding('utf8');
     req.on('data', chunk => { body += chunk; if (body.length > 65536) req.destroy(); });
     req.on('end', () => {
       try {
         const request = JSON.parse(body);
+        if (url.pathname === '/sim/a1/touch') {
+          const state = server.states?.get('a1');
+          if (!state || typeof request.active !== 'boolean' || !Number.isInteger(request.speed) || request.speed < 1 || request.speed > 100) throw new Error('触摸参数无效');
+          state.touch_active = request.active && !state.child_lock;
+          if (state.touch_active) {
+            state.speed = state.requested_speed = request.speed;
+            state.percentage = state.fan_on ? request.speed : 0;
+          }
+          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ code: 'ok' }));
+          return;
+        }
         const state = server.states?.get(url.searchParams.get('model') || req.headers.referer?.match(/\/(tc1|a1|m1)/)?.[1]);
         if (!state) throw new Error('请先打开模拟设备首页');
         if (!request.action?.endsWith('.get')) apply(state, request.action, request.params);
@@ -143,5 +169,12 @@ const server = createServer((req, res) => {
   }
   res.writeHead(404).end('Not found');
 });
+
+setInterval(() => {
+  const state = server.states?.get('a1');
+  if (!state) return;
+  const target = state.fan_on ? state.speed : 0;
+  state.applied_speed = target ? state.applied_speed + Math.max(-10, Math.min(10, target - state.applied_speed)) : 0;
+}, 100);
 
 server.listen(port, host, () => console.log(`Device simulator listening on http://${host}:${port}/`));
