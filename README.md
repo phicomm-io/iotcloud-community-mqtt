@@ -156,3 +156,16 @@ docker compose -f docker-compose.yaml -f compose.ghcr.yaml up -d --no-build --no
 ```
 
 上述命令复用现有配置、账号与设备数据。首次安装仍需按前文初始化；初始化工具也可通过同一 Compose 覆盖文件使用后端镜像，例如 `docker compose -f docker-compose.yaml -f compose.ghcr.yaml run --rm --no-deps setup init --output /runtime`。发布镜像不会自动替换任何运行中的服务器。
+
+## 开源许可
+
+本项目以 [GNU GPL v3.0](LICENSE) 开源。第三方组件遵循各自的许可证。
+
+## Release 与 Wiki demo
+
+推送 `v*` 标签会依次运行平台测试、发布 amd64/arm64 GHCR 镜像、创建 GitHub Release，
+并由官网 CI 每 5 分钟检查新 Release，将该标签 `frontend.lock.json` 锁定且校验通过的 `demos/platform/` 同步至
+[Wiki 平台 demo](https://phicomm-io.github.io/demos/platform/)。普通 main 推送不会更新 demo。
+Release 附带前端锁文件；demo 的 `release.json` 记录平台标签、平台 commit 和前端 commit。
+
+官网通过公开 Release 读取前端，不保存跨仓库访问令牌。同步只替换平台 demo，保留官网、指南、设备 demo 和固件归档。
