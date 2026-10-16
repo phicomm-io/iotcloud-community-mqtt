@@ -15,11 +15,11 @@ docker run -d --name "$test_container" --user "$(id -u):$(id -g)" -p 127.0.0.1::
 test_port=$(docker port "$test_container" 8883/tcp | cut -d: -f2)
 export PHICOMM_TEST_RUNTIME="$test_runtime/runtime" PHICOMM_TEST_BROKER="ssl://localhost:$test_port"
 (cd "$project_root/backend" && go test -v -run TestRealDynamicSecurity .)
-(cd "$project_root/backend" && PHICOMM_TEST_PHASE=seed go test -v -run TestRealPersistence .)
+(cd "$project_root/backend" && PHICOMM_TEST_PHASE=seed go test -v -run 'TestRealPersistence|TestRealDynamicSecurityHADiscovery' .)
 docker restart "$test_container" >/dev/null
 test_port=$(docker port "$test_container" 8883/tcp | cut -d: -f2)
 export PHICOMM_TEST_BROKER="ssl://localhost:$test_port"
-(cd "$project_root/backend" && PHICOMM_TEST_PHASE=verify go test -v -run TestRealPersistence .)
+(cd "$project_root/backend" && PHICOMM_TEST_PHASE=verify go test -v -run 'TestRealPersistence|TestRealDynamicSecurityHADiscovery' .)
 # Verify real Mosquitto passwd hashes without ever needing the user's original passwords.
 mkdir "$test_runtime/legacy"
 docker run --rm --user "$(id -u):$(id -g)" -v "$test_runtime/legacy:/legacy" eclipse-mosquitto:2.0.22 \
