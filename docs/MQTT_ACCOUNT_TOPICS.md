@@ -44,6 +44,8 @@ HA 发现为 `homeassistant/<component>/<scope>/<model>_<mac>_<entity>/config`�
 
 账号只允许发布自己的上线公告、访问明确登记的设备根与本账号 HA 发现配置；不能订阅其他账号设备或 `$CONTROL` 管理主题。用户名别名使用自身编码的 scope，与主账号共享归属，但不混淆线上的 scope。
 
+HA 按组件使用 `homeassistant/+/+/config` 和 `homeassistant/+/+/+/config` 形式的发现订阅。账号角色仅额外允许这两种订阅模式，不授予通配发布或消息接收权限。Broker 对每条实际投递的消息再次检查 `publishClientReceive`；默认拒绝，仅允许本账号及其别名的发现命名空间和已登记的 Legacy 设备，其他账号的实时与 retained 配置均不可读。
+
 ## Legacy
 
 TC1 保留原有 `device/ztc1/<MAC>/...` 与原 HA 标识，订阅保留大小写及分隔符变体。平台支持原始 JSON 状态与命令，以及当前固件 Legacy 模式保留的 HA 文本状态与控制；收到文本状态后沿用大写 MAC 的文本命令。Legacy 不会自动变成 TMCP。M1/A1 不提供 Legacy 或早期项目协议。

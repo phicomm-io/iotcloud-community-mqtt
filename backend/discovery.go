@@ -42,7 +42,15 @@ func (a *Application) accountRules(username string) ([]Rule, error) {
 	if err != nil {
 		return nil, err
 	}
-	rules := []Rule{{"subscribeLiteral", "homeassistant/status", true, 1}, {"publishClientReceive", "homeassistant/status", true, 1}}
+	// HA subscribes across node IDs. Permit its discovery filters, while the
+	// account-scoped publishClientReceive ACLs below still filter every message.
+	// Never grant broad receive/send access alongside these subscription rules.
+	rules := []Rule{
+		{"subscribeLiteral", "homeassistant/status", true, 1},
+		{"publishClientReceive", "homeassistant/status", true, 1},
+		{"subscribePattern", "homeassistant/+/+/config", true, 1},
+		{"subscribePattern", "homeassistant/+/+/+/config", true, 1},
+	}
 	for _, principal := range principals {
 		for _, topic := range []string{"homeassistant/+/" + userKey(principal) + "/#", "phicomm/v2/" + userKey(principal) + "/discovery/+"} {
 			for _, kind := range []string{"publishClientSend", "publishClientReceive", "subscribePattern"} {
