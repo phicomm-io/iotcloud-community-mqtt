@@ -162,7 +162,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, errCredentials.Error(), 401)
 		return
 	}
-	if err = app.broker.Authenticate(principal, req.Password); err != nil {
+	if err = app.authenticateWebsite(owner, principal, req.Password); err != nil {
 		operationError(w, err)
 		return
 	}
@@ -218,7 +218,7 @@ func handlePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	u := currentUser(r)
-	if err := app.broker.Authenticate(u, req.CurrentPassword); err != nil {
+	if err := app.authenticateWebsite(u, u, req.CurrentPassword); err != nil {
 		operationError(w, err)
 		return
 	}
@@ -227,9 +227,9 @@ func handlePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.SetCookie(w, sessionCookie("", -1))
-	jsonResp(w, map[string]string{"message": "密码已修改，请重新登录并更新设备 MQTT 密码"})
+	jsonResp(w, map[string]string{"message": "网站密码已修改，请重新登录；MQTT 密码保持不变"})
 }
-func (a *Application) changePassword(user, password string) error {
+func (a *Application) changeMQTTPassword(user, password string) error {
 	if len(password) < 6 || len(password) > 256 {
 		return errors.New("密码长度须为 6–256 字节")
 	}
@@ -239,8 +239,7 @@ func (a *Application) changePassword(user, password string) error {
 	if err != nil || state != "active" {
 		return sql.ErrNoRows
 	}
-	// Revoke website sessions even if the broker changes the password but its response is lost.
-	if _, err = a.store.Exec("DELETE FROM sessions WHERE username=?", user); err != nil {
+	if _, err = a.store.Exec("UPDATE account_passwords SET mqtt_separate=1 WHERE username=?", user); err != nil {
 		return err
 	}
 	aliases, err := a.store.aliases(user)

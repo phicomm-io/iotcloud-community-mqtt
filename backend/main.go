@@ -109,6 +109,7 @@ func routes() http.Handler {
 	mux.HandleFunc("/api/auth/logout", userAuth(handleLogout))
 	mux.HandleFunc("/api/auth/me", userAuth(handleMe))
 	mux.HandleFunc("/api/auth/password", userAuth(handlePassword))
+	mux.HandleFunc("/api/auth/mqtt-password", userAuth(handleMQTTPassword))
 	mux.HandleFunc("/api/auth/alias", userAuth(handleAliases))
 	mux.HandleFunc("/api/devices", userAuth(handleDevices))
 	mux.HandleFunc("/api/devices/", userAuth(handleDevice))

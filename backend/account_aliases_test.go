@@ -63,7 +63,7 @@ func TestAccountAliasesShareCredentialsRolesAndDeviceOwner(t *testing.T) {
 	if !b.attached["short_name"]["device_001122334455"] {
 		t.Fatal("legacy role not shared")
 	}
-	if err = a.changePassword(email, "replacement123"); err != nil {
+	if err = a.changeMQTTPassword(email, "replacement123"); err != nil {
 		t.Fatal(err)
 	}
 	for _, name := range []string{email, "short_name"} {
@@ -171,7 +171,7 @@ func TestAliasPasswordFailureCannotLeaveOldAliasCredentialsEnabled(t *testing.T)
 	}
 	b := a.broker.(*fakeBroker)
 	a.broker = passwordFailBroker{b, "alice_short"}
-	if err := a.changePassword("alice", "replacement123"); err != errUnavailable {
+	if err := a.changeMQTTPassword("alice", "replacement123"); err != errUnavailable {
 		t.Fatal(err)
 	}
 	if b.Authenticate("alice_short", "secret123") != errCredentials {

@@ -105,7 +105,7 @@ func TestAdminBootstrapOnceAndNoPrivilegeAdoption(t *testing.T) {
 	if err := app.bootstrapAdmin(); err != nil {
 		t.Fatal(err)
 	}
-	if err := app.broker.Authenticate("admin", "changed-password-123"); err != nil {
+	if err := app.authenticateWebsite("admin", "admin", "changed-password-123"); err != nil {
 		t.Fatal("restart reset password", err)
 	}
 	app = testApp(t)

@@ -37,6 +37,9 @@ func (a *Application) register(user, password string) error {
 	if err == nil {
 		if state == "pending" {
 			if authErr := a.broker.Authenticate(user, password); authErr == nil {
+				if err = a.saveWebsitePassword(user, password); err != nil {
+					return err
+				}
 				_, err = a.store.Exec("UPDATE users SET state='active' WHERE username=?", user)
 				if err != nil {
 					return err
@@ -71,6 +74,9 @@ func (a *Application) register(user, password string) error {
 	}
 	_, err = a.broker.Command("createClient", map[string]interface{}{"username": user, "password": password})
 	if err != nil {
+		return err
+	}
+	if err = a.saveWebsitePassword(user, password); err != nil {
 		return err
 	}
 	_, err = a.store.Exec("UPDATE users SET state='active' WHERE username=?", user)

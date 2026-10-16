@@ -184,3 +184,9 @@ allowed_origins:
 来源必须是精确的 scheme + host（可带端口），不含路径或末尾 `/`，不要使用通配符。前端配置后端根域和该后端配套的 MQTT WSS 地址。后端保留 Cookie 登录，同时支持同一可撤销会话的 Bearer 传递；白名单来源可读取 `X-IotCloud-Session`，不依赖第三方 Cookie。来源白名单并不授予账号或 MQTT 权限。公网部署使用 HTTPS / WSS。
 
 前端通过 frontend.lock.json 固定到经过校验的独立 Release；相邻前端工作区不会自动进入镜像。
+
+### 网站与 MQTT 密码
+
+MQTT 密码默认使用注册密码。用户可在设置中输入网站当前密码，独立修改 MQTT 密码；修改网站密码不会影响设备 MQTT 连接。修改 MQTT 密码后须更新设备连接凭据，MQTT 别名同步使用新 MQTT 密码。已有账号首次成功登录时自动建立独立的网站密码哈希。
+
+接口：`POST /api/auth/mqtt-password`，需要登录和同源校验，JSON 为 `current_password`（网站密码）和 `password`（新 MQTT 密码，6–256 字节）。`/api/auth/password` 仅修改网站密码并撤销网站会话。

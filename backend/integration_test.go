@@ -112,7 +112,10 @@ func TestRealDynamicSecurity(t *testing.T) {
 	if e = a.saveDevice(v, d, false); e != nil {
 		t.Fatal("rebind", e)
 	}
-	if e = a.changePassword(u, "replacement-password"); e != nil {
+	if e = a.authenticateWebsite(u, u, pw); e != nil {
+		t.Fatal(e)
+	}
+	if e = a.changeMQTTPassword(u, "replacement-password"); e != nil {
 		t.Fatal(e)
 	}
 	if e = b.Authenticate(u, pw); e != errCredentials {
@@ -120,6 +123,18 @@ func TestRealDynamicSecurity(t *testing.T) {
 	}
 	if e = b.Authenticate(u, "replacement-password"); e != nil {
 		t.Fatal("new password", e)
+	}
+	if e = a.authenticateWebsite(u, u, pw); e != nil {
+		t.Fatal("MQTT change affected website", e)
+	}
+	if e = a.changePassword(u, "website-only-password"); e != nil {
+		t.Fatal(e)
+	}
+	if e = a.authenticateWebsite(u, u, "website-only-password"); e != nil {
+		t.Fatal(e)
+	}
+	if e = b.Authenticate(u, "replacement-password"); e != nil {
+		t.Fatal("website change affected MQTT", e)
 	}
 }
 
@@ -492,7 +507,7 @@ func TestRealDynamicSecurityAliasesAndLinkage(t *testing.T) {
 	}
 	own.Disconnect(0)
 	foreign.Disconnect(0)
-	if err = a.changePassword(user, "replacement-password"); err != nil {
+	if err = a.changeMQTTPassword(user, "replacement-password"); err != nil {
 		t.Fatal(err)
 	}
 	if b.Authenticate(alias, pw) != errCredentials {
