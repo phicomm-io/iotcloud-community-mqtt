@@ -130,3 +130,23 @@ npm --prefix frontend run dev
 在前端仓库修改并提交代码，等待对应 `frontend-<完整commit>` Release。将该 Release 的 `frontend.lock.json` 复制到此仓库，执行 `python3 scripts/frontend_release.py` 和 `./build.sh`，测试后提交锁文件。离线下载可用 `--archive` 指定压缩包，仍校验 SHA-256。
 
 浏览器集成测试 `scripts/test-browser-compose.sh` 从同一 Release 的 `source/frontend/` 安装测试依赖，针对独立临时后端测试；源码开发、样式同步、前端单元测试归前端仓库管理。`node scripts/device-simulator.mjs` 继续启动锁定版本的设备模拟器。
+
+## GHCR 自动发布
+
+推送 `main`、推送 `v*` 标签或在 `main` 手动运行 **Test and publish TMCP platform**，会先执行平台、真实 Broker 和隔离浏览器测试，再发布两个支持 `linux/amd64`、`linux/arm64` 的镜像：
+
+- `ghcr.io/phicomm-io/phicomm-community-mqtt-backend`
+- `ghcr.io/phicomm-io/phicomm-community-mqtt-web`
+
+`main` 更新 `latest`；每次发布都有 `sha-<完整平台commit>` 标签；`v*` 标签按原名发布。PR 只测试，不推送镜像。工作流使用仓库自带的 `GITHUB_TOKEN`，无需配置额外发布密码。镜像包含平台源码和前端锁定版本标签，工作流摘要记录发布 digest。Web 镜像从 `frontend.lock.json` 指定 Release 下载并校验前端，不跟随前端仓库的最新版本。
+
+在已有初始化数据和配置的服务器上使用预构建镜像：
+
+```sh
+# 建议替换为工作流发布的 sha-<完整平台commit>，以固定版本。
+export IMAGE_TAG=latest
+docker compose -f docker-compose.yaml -f compose.ghcr.yaml pull backend nginx
+docker compose -f docker-compose.yaml -f compose.ghcr.yaml up -d --no-build --no-deps backend nginx
+```
+
+上述命令复用现有配置、账号与设备数据。首次安装仍需按前文初始化；初始化工具也可通过同一 Compose 覆盖文件使用后端镜像，例如 `docker compose -f docker-compose.yaml -f compose.ghcr.yaml run --rm --no-deps setup init --output /runtime`。发布镜像不会自动替换任何运行中的服务器。

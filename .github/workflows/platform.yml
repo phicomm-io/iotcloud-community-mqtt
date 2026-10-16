@@ -1,13 +1,17 @@
-name: Test TMCP platform
+name: Test and publish TMCP platform
 on:
   pull_request:
     paths: ['**', '!**.md']
   push:
     branches: [main]
+    tags: ['v*']
     paths: ['**', '!**.md']
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: platform-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   platform:
     name: Platform host and browser tests
@@ -29,3 +33,73 @@ jobs:
         run: scripts/test-integration.sh
       - name: Test isolated Broker and browser flows
         run: scripts/test-browser-compose.sh
+
+  publish:
+    name: Publish ${{ matrix.image }} to GHCR
+    needs: platform
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: backend
+            context: ./backend
+            dockerfile: ./backend/Dockerfile
+          - image: web
+            context: .
+            dockerfile: ./web/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read pinned frontend version
+        id: frontend
+        run: echo "commit=$(python3 -c 'import json; print(json.load(open("frontend.lock.json"))["commit"])')" >> "$GITHUB_OUTPUT"
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Log in to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Image tags and labels
+        id: meta
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
+        with:
+          images: ghcr.io/${{ github.repository }}-${{ matrix.image }}
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=sha,format=long
+            type=ref,event=tag
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            io.phicomm.frontend.revision=${{ steps.frontend.outputs.commit }}
+      - name: Build and publish
+        id: build
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+      - name: Record published digest
+        env:
+          IMAGE: ghcr.io/${{ github.repository }}-${{ matrix.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          FRONTEND_COMMIT: ${{ steps.frontend.outputs.commit }}
+        run: |
+          {
+            echo "### $IMAGE"
+            echo "Digest: \`$DIGEST\`"
+            echo "Frontend: \`$FRONTEND_COMMIT\`"
+          } >> "$GITHUB_STEP_SUMMARY"
