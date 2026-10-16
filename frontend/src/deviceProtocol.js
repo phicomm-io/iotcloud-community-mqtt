@@ -63,8 +63,19 @@ const merge = (state, data) => {
         "mqtt_username",
       ].includes(key)
     )
-      state[key] = value;
+      if (/^plug_[0-5]$/.test(key) && value && typeof value === "object") {
+        const previous = state[key] || {};
+        state[key] = {...previous, ...value, ...(value.setting ? {setting:{...previous.setting,...value.setting}} : {})};
+      } else state[key] = value;
 };
+// Old firmware reports each meter on a separate HA topic. Only update fields
+// actually present so uptime/energy messages cannot erase the power sample.
+function legacyMeters(state, data) {
+ for (const [source,target] of [['power','power_watts'],['powerConsumption','energy_kwh']]) {
+  const value=data[source];
+  if(value!==undefined && value!==null && value!=='' && Number.isFinite(Number(value))) state[target]=Number(value);
+ }
+}
 const json = (value) => {
   try {
     const v = JSON.parse(value);
@@ -89,17 +100,26 @@ export function applyMessage(d, state, topic, message, now = Date.now()) {
  if(p[0]==="homeassistant") {
   try{if(normalizeMAC(p[2])!==d.mac)return false;}catch{return false;}
   if(p.length!==5)return false;
-  if(p[4]==="config"){const data=json(String(message));if(data?.dev?.name||data?.device?.name)state.name=data.dev?.name||data.device?.name;return true;}
+  if(p[4]==="config"){
+   const data=json(String(message));
+   if(data?.dev?.name||data?.device?.name)state.name=data.dev?.name||data.device?.name;
+   const socket=p[1]==="switch"&&p[3].match(/^socket_([0-5])$/);
+   if(socket&&typeof data?.name==='string'){
+    const key=`plug_${socket[1]}`,previous=state[key]||{};
+    state[key]={...previous,setting:{...previous.setting,name:data.name}};
+   }
+   return true;
+  }
   if(p[4]!=="state")return false;
-  if(p[1]==="sensor"){const data=json(String(message));if(data){merge(state,data);state.power_watts=Number(data.power);state.energy_kwh=Number(data.powerConsumption);}return true;}
+  if(p[1]==="sensor"){const data=json(String(message));if(data){merge(state,data);legacyMeters(state,data);}return true;}
   const m=String(message).trim().match(/^set (socket|led|child_lock) ([a-f\d:]+) (?:(\d) )?([01])$/i);
   if(!m)return false;try{if(normalizeMAC(m[2])!==d.mac)return false;}catch{return false;}
-  state.legacyText=true;if(m[1]==="socket"){state[`plug_${m[3]}`]={...(state[`plug_${m[3]}`]||{}),on:Number(m[4])};}else state[m[1]]=Number(m[4]);return true;
+  state.legacyText=true;if(m[1]==="socket"){state[`plug_${m[3]}`]={...(state[`plug_${m[3]}`]||{}),on:Number(m[4])};}else state[m[1]==='led'?'led_lock':'child_lock']={on:Number(m[4])};return true;
  }
  if(p.length!==4 || p[0]!=="device" || p[1]!=="ztc1")return false;
  try {if(normalizeMAC(p[2])!==d.mac)return false;}catch{return false;}
  if(p[3]==="availability")state.available=["online","1","true"].includes(String(message));
- else if(["sensor","state"].includes(p[3])) {const data=json(String(message));if(!data)return false;merge(state,data);}
+ else if(["sensor","state"].includes(p[3])) {const data=json(String(message));if(!data)return false;merge(state,data);legacyMeters(state,data);}
  else return false;
  return true;
 }
