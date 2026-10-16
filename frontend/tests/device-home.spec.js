@@ -33,9 +33,12 @@ test('daily list hides protocol details and legacy names can be changed and rest
  await page.getByRole('button',{name:'保存名称'}).click();
  await expect(page.locator('.device-select')).toContainText('书房插排');
  await page.reload();await expect(page.locator('.device-select')).toContainText('书房插排');
+ await page.getByRole('button',{name:/修改.*的名称/}).click();
+ await page.getByRole('button',{name:'恢复默认名称'}).click();
+ await expect(page.locator('.device-select')).toContainText('TC1 智能插排');
  await page.getByRole('button',{name:'设置',exact:true}).click();
  await page.getByRole('navigation',{name:'设置分类'}).getByRole('button',{name:/设备管理/}).click();
- await expect(page.locator('.managed-device')).toContainText('书房插排');
+ await expect(page.locator('.managed-device')).toContainText('TC1 智能插排');
  await page.locator('.device-details summary').click();
  await expect(page.locator('.device-details')).toContainText('Legacy');
 });
