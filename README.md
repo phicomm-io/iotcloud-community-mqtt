@@ -140,6 +140,12 @@ npm --prefix frontend run dev
 
 `main` 更新 `latest`；每次发布都有 `sha-<完整平台commit>` 标签；`v*` 标签按原名发布。PR 只测试，不推送镜像。工作流使用仓库自带的 `GITHUB_TOKEN`，无需配置额外发布密码。镜像包含平台源码和前端锁定版本标签，工作流摘要记录发布 digest。Web 镜像从 `frontend.lock.json` 指定 Release 下载并校验前端，不跟随前端仓库的最新版本。
 
+首次发布的 GHCR 包默认可能是私有包。公开分发时，仓库管理员需在两个包的 **Package settings → Change visibility** 中设为 Public；在此之前，拉取端需要使用具备 `read:packages` 权限且能访问对应包的账号登录（不要将令牌提交到仓库）：
+
+```sh
+printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+```
+
 在已有初始化数据和配置的服务器上使用预构建镜像：
 
 ```sh
