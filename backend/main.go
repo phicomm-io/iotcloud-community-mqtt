@@ -117,6 +117,7 @@ func routes() http.Handler {
 	mux.HandleFunc("/api/admin/user/", adminAuth(handleUserOps))
 	mux.HandleFunc("/api/admin/devices", adminAuth(handleAdminDevices))
 	mux.HandleFunc("/api/admin/device/", adminAuth(handleAdminDevice))
+	mux.HandleFunc("/api/admin/verification-emails", adminAuth(handleVerificationEmails))
 	mux.HandleFunc("/api/admin/config", adminAuth(handleConfig))
 	mux.HandleFunc("/api/admin/acl", adminAuth(func(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "已改为结构化设备权限管理", http.StatusGone)

@@ -123,12 +123,32 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, err.Error(), 400)
 		return
 	}
-	if level == 2 && (!emailRegex.MatchString(req.Email) || len(req.Email) > 254 || !verifyCode(req.Email, req.Code)) {
-		jsonError(w, "邮箱验证码错误或已过期", 400)
-		return
+	var verificationID int64
+	if level == 2 {
+		if !emailRegex.MatchString(req.Email) || len(req.Email) > 254 {
+			jsonError(w, "邮箱验证码错误或已过期", 400)
+			return
+		}
+		var err error
+		verificationID, err = app.store.consumeVerification(req.Email, req.Code)
+		if err != nil {
+			operationError(w, err)
+			return
+		}
+		if verificationID == 0 {
+			jsonError(w, "邮箱验证码错误或已过期", 400)
+			return
+		}
 	}
-	if err := app.registerWithEmail(req.Username, req.Password, req.Email, level == 2); err != nil {
-		operationError(w, err)
+	registrationErr := app.registerWithEmail(req.Username, req.Password, req.Email, level == 2)
+	if verificationID != 0 {
+		if err := app.store.finishVerificationRegistration(verificationID, req.Username, registrationErr == nil); err != nil {
+			operationError(w, err)
+			return
+		}
+	}
+	if registrationErr != nil {
+		operationError(w, registrationErr)
 		return
 	}
 	jsonResp(w, map[string]string{"message": "注册成功，请登录后添加设备", "username": req.Username})
@@ -165,10 +185,19 @@ func handleVerifyEmail(w http.ResponseWriter, r *http.Request) {
 		operationError(w, err)
 		return
 	}
-	if err = sendVerificationEmail(req.Email, code); err != nil {
+	id, err := app.store.beginVerification(req.Email, code)
+	if err != nil {
+		operationError(w, err)
+		return
+	}
+	sendErr := deliverVerificationEmail(req.Email, code)
+	if err = app.store.finishVerificationSend(id, req.Email, sendErr == nil); err != nil {
+		operationError(w, err)
+		return
+	}
+	if sendErr != nil {
 		jsonError(w, "邮件发送失败，请稍后重试", 503)
 		return
 	}
-	storeCode(req.Email, code)
 	jsonResp(w, map[string]string{"message": "验证码已发送，5 分钟内有效"})
 }

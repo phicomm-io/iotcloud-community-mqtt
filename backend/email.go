@@ -9,19 +9,7 @@ import (
 	"net"
 	"net/smtp"
 	"strconv"
-	"sync"
 	"time"
-)
-
-// 验证码记录
-type codeRecord struct {
-	Code    string
-	Expires time.Time
-}
-
-var (
-	codeMu  sync.Mutex
-	codeSto = make(map[string]codeRecord) // key: email
 )
 
 // 生成 6 位数字验证码
@@ -38,38 +26,11 @@ func genCode() (string, error) {
 	return string(code), nil
 }
 
-// 存储验证码（5 分钟有效）
-func storeCode(email, code string) {
-	codeMu.Lock()
-	defer codeMu.Unlock()
-	codeSto[email] = codeRecord{Code: code, Expires: time.Now().Add(5 * time.Minute)}
-	log.Printf("[email] 验证码已生成 email=%s", email)
-}
-
-// 校验验证码（校验后立即删除）
-func verifyCode(email, code string) bool {
-	codeMu.Lock()
-	defer codeMu.Unlock()
-	rec, ok := codeSto[email]
-	if !ok {
-		return false
-	}
-	if time.Now().After(rec.Expires) {
-		delete(codeSto, email)
-		return false
-	}
-	if rec.Code != code {
-		log.Printf("[email] 验证码错误 email=%s", email)
-		return false
-	}
-	delete(codeSto, email)
-	log.Printf("[email] 验证码校验通过 email=%s", email)
-	return true
-}
-
 // 发送验证码邮件
 func sendVerificationEmail(to, code string) error {
+	cfgMu.RLock()
 	s := cfg.SMTP
+	cfgMu.RUnlock()
 	addr := net.JoinHostPort(s.Host, strconv.Itoa(s.Port))
 	log.Printf("[email] 尝试发送验证码 to=%s smtp=%s tls=%v", to, addr, s.TLS)
 

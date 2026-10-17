@@ -87,6 +87,9 @@ func openStore(path string) (*Store, error) {
  CREATE TABLE IF NOT EXISTS account_passwords(username TEXT PRIMARY KEY REFERENCES users(username) ON DELETE CASCADE,hash TEXT NOT NULL,mqtt_separate INTEGER NOT NULL DEFAULT 0);
  CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY,value TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS analytics_events(id INTEGER PRIMARY KEY,ts INTEGER NOT NULL,visitor TEXT NOT NULL,visit TEXT NOT NULL,event TEXT NOT NULL,page TEXT NOT NULL,model TEXT NOT NULL,referrer TEXT NOT NULL,browser TEXT NOT NULL,os TEXT NOT NULL,screen TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS verification_emails(id INTEGER PRIMARY KEY AUTOINCREMENT,email TEXT NOT NULL,code TEXT NOT NULL DEFAULT '',created_at INTEGER NOT NULL,sent_at INTEGER NOT NULL DEFAULT 0,expires_at INTEGER NOT NULL DEFAULT 0,status TEXT NOT NULL,detail TEXT NOT NULL DEFAULT '',registered_at INTEGER NOT NULL DEFAULT 0,username TEXT NOT NULL DEFAULT '');
+ CREATE INDEX IF NOT EXISTS verification_email_lookup ON verification_emails(email,id DESC);
+ CREATE INDEX IF NOT EXISTS verification_created ON verification_emails(created_at);
  CREATE INDEX IF NOT EXISTS analytics_ts ON analytics_events(ts);`)
 	if err != nil {
 		db.Close()

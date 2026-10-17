@@ -103,7 +103,7 @@ func TestEmailRegistrationRequiresShortUsernameAndSeparatesEmail(t *testing.T) {
 		routes().ServeHTTP(w, r)
 		return w
 	}
-	storeCode("new@example.com", "123456")
+	seedVerification(t, app.store, "new@example.com", "123456")
 	if w := call(`{"username":"new@example.com","email":"new@example.com","password":"secret123","code":"123456"}`); w.Code != 400 {
 		t.Fatal(w.Code, w.Body)
 	}

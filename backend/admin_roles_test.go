@@ -32,7 +32,7 @@ func TestUnifiedAdminAuthorization(t *testing.T) {
 		t.Fatal(login.Code, login.Body.String())
 	}
 	cookie := login.Result().Cookies()[0]
-	for _, path := range []string{"/api/admin/users", "/api/admin/devices", "/api/admin/config", "/api/admin/acl"} {
+	for _, path := range []string{"/api/admin/users", "/api/admin/devices", "/api/admin/config", "/api/admin/verification-emails", "/api/admin/acl"} {
 		if w := request(nil, "GET", path, "", "", "forged"); w.Code != 401 {
 			t.Fatal(path, w.Code)
 		}
