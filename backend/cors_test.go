@@ -4,6 +4,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestFrontendOriginsAndSession(t *testing.T) {
@@ -47,6 +48,18 @@ func TestCrossOriginBearerLoginAndRevocation(t *testing.T) {
 	token := rec.Header().Get("X-IotCloud-Session")
 	if rec.Code != 200 || token == "" {
 		t.Fatalf("login: %d %s", rec.Code, rec.Body.String())
+	}
+	const seconds = 30 * 24 * 60 * 60
+	cookies := rec.Result().Cookies()
+	if len(cookies) != 1 || cookies[0].MaxAge != seconds {
+		t.Fatal("expected persistent 30-day login cookie")
+	}
+	var expires int64
+	if err := app.store.QueryRow("SELECT expires FROM sessions WHERE token=?", digest(token)).Scan(&expires); err != nil {
+		t.Fatal(err)
+	}
+	if remaining := expires - time.Now().Unix(); remaining < seconds-5 || remaining > seconds {
+		t.Fatalf("unexpected session lifetime: %d", remaining)
 	}
 	call := func(method, path, origin string) int {
 		req := httptest.NewRequest(method, "http://api.example"+path, nil)

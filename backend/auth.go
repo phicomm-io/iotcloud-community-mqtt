@@ -84,14 +84,17 @@ func sessionCookie(value string, age int) *http.Cookie {
 	cfgMu.RUnlock()
 	return &http.Cookie{Name: "phicomm_session", Value: value, Path: "/", HttpOnly: true, Secure: secure, SameSite: http.SameSiteLaxMode, MaxAge: age}
 }
+
+const sessionLifetime = 30 * 24 * time.Hour
+
 func createSession(w http.ResponseWriter, user string) error {
 	token := randomID()
 	app.store.Exec("DELETE FROM sessions WHERE expires<=?", time.Now().Unix())
-	_, err := app.store.Exec("INSERT INTO sessions(token,username,expires) VALUES(?,?,?)", digest(token), user, time.Now().Add(24*time.Hour).Unix())
+	_, err := app.store.Exec("INSERT INTO sessions(token,username,expires) VALUES(?,?,?)", digest(token), user, time.Now().Add(sessionLifetime).Unix())
 	if err != nil {
 		return err
 	}
-	http.SetCookie(w, sessionCookie(token, 86400))
+	http.SetCookie(w, sessionCookie(token, int(sessionLifetime/time.Second)))
 	w.Header().Set("X-IotCloud-Session", token)
 	return nil
 }
