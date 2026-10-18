@@ -116,7 +116,7 @@ func handleAdminDevices(w http.ResponseWriter, r *http.Request) {
 			jsonError(w, err.Error(), 400)
 			return
 		}
-		if err := app.saveDevice(d.Username, d, false); err != nil {
+		if err := app.addDevice(d.Username, d); err != nil {
 			operationError(w, err)
 			return
 		}

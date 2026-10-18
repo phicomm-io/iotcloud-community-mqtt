@@ -207,6 +207,19 @@ func (a *Application) syncScopedDevice(d Device) error {
 	_, err = a.store.Exec("UPDATE scoped_devices SET status='active' WHERE username=? AND mqtt_username=? AND mac=?", d.Username, topicUsername(d), d.MAC)
 	return err
 }
+
+// Explicit additions can restore hidden devices; retained discovery cannot.
+func (a *Application) addDevice(username string, d Device) error {
+	if err := validateDevice(&d); err != nil {
+		return err
+	}
+	if d.Version != "v2" {
+		return a.saveDevice(username, d, false)
+	}
+	d.Username = username
+	return a.registerScopedDevice(d, true)
+}
+
 func (a *Application) discover(topic string, payload []byte) error {
 	parts := strings.Split(topic, "/")
 	if len(parts) != 5 || parts[0] != "phicomm" || parts[1] != "v2" || parts[3] != "discovery" || !strings.HasPrefix(parts[2], "u_") || len(payload) == 0 || len(payload) > 4096 {
@@ -243,14 +256,21 @@ func (a *Application) discover(topic string, payload []byte) error {
 	if d.Model == "tc1" && d.Version != "v2" {
 		return errors.New("scoped TC1 requires v2")
 	}
+	return a.registerScopedDevice(d, false)
+}
+
+func (a *Application) registerScopedDevice(d Device, restoreHidden bool) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
+	username := d.Username
 	owner, principal, err := a.store.resolveAccount(username)
 	if err != nil || principal != username {
 		return errCredentials
 	}
 	d.Username = owner
 	d.MQTTUsername = principal
+	d.Namespace = "account"
+	d.Status = "pending"
 	state, err := a.store.state(owner)
 	if err != nil || state != "active" {
 		return errCredentials
@@ -258,14 +278,20 @@ func (a *Application) discover(topic string, payload []byte) error {
 	var existing Device
 	err = a.store.QueryRow("SELECT model,version,status FROM scoped_devices WHERE username=? AND mqtt_username=? AND mac=?", owner, principal, d.MAC).Scan(&existing.Model, &existing.Version, &existing.Status)
 	if err == nil {
-		if existing.Status == "hidden" || existing.Status == "deleting" {
+		if !restoreHidden && (existing.Status == "hidden" || existing.Status == "deleting") {
 			return nil
 		}
-		if existing.Model != d.Model || existing.Version != d.Version {
+		if existing.Model != d.Model || existing.Version != d.Version || existing.Status == "deleting" {
 			return errConflict
 		}
-		if existing.Status == "active" {
+		if existing.Status == "active" && !restoreHidden {
 			return nil
+		}
+		if existing.Status == "hidden" {
+			_, err = a.store.Exec("UPDATE scoped_devices SET status='pending' WHERE username=? AND mqtt_username=? AND mac=?", owner, principal, d.MAC)
+			if err != nil {
+				return err
+			}
 		}
 	} else if !errors.Is(err, sql.ErrNoRows) {
 		return err
