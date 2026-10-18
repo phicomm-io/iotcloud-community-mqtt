@@ -34,16 +34,7 @@ func handleDevices(w http.ResponseWriter, r *http.Request) {
 			jsonError(w, err.Error(), 400)
 			return
 		}
-		if d.Version == "v2" {
-			payload := []byte(`{"schema":1,"protocol":"tmcp","protocol_version":2,"version":"v2","model":"` + d.Model + `"}`)
-			if err := app.discover("phicomm/v2/"+userKey(u)+"/discovery/"+d.MAC, payload); err != nil {
-				operationError(w, err)
-				return
-			}
-			jsonResp(w, map[string]string{"message": "设备已添加"})
-			return
-		}
-		if err := app.saveDevice(u, d, false); err != nil {
+		if err := app.addDevice(u, d); err != nil {
 			operationError(w, err)
 			return
 		}

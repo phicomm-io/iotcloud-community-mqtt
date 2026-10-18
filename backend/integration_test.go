@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -341,6 +343,53 @@ func TestRealDynamicSecurityDiscovery(t *testing.T) {
 	list, e := s.devices(users[1])
 	if e != nil || len(list) != 1 {
 		t.Fatal("spoof created device", list, e)
+	}
+	// Manual TMCP additions must grant the same scoped ACLs as discovery,
+	// including restoring a hidden device through the ordinary POST endpoint.
+	app = a
+	t.Cleanup(func() { app = nil })
+	post := func(admin bool) {
+		t.Helper()
+		body := `{"mac":"AA:BB:CC:00:11:22","model":"tc1","version":"v2"`
+		if admin {
+			body += `,"username":"` + users[0] + `"`
+		}
+		r := httptest.NewRequest("POST", "/", strings.NewReader(body+"}"))
+		r = r.WithContext(context.WithValue(r.Context(), userContextKey{}, users[0]))
+		w := httptest.NewRecorder()
+		if admin {
+			handleAdminDevices(w, r)
+		} else {
+			handleDevices(w, r)
+		}
+		if w.Code != 200 {
+			t.Fatal("manual registration", w.Code, w.Body.String())
+		}
+	}
+	const manualMAC = "aabbcc001122"
+	manualTopic := "phicomm/v2/" + userKey(users[0]) + "/tc1/" + manualMAC + "/#"
+	post(true)
+	if grant(connect(users[0]), manualTopic) == 128 || grant(connect(users[1]), manualTopic) != 128 {
+		t.Fatal("manual TMCP permission or account isolation failed")
+	}
+	w := httptest.NewRecorder()
+	handleScopedDeviceFor(w, httptest.NewRequest("DELETE", "/", nil), manualMAC, users[0])
+	if w.Code != 200 || grant(connect(users[0]), manualTopic) != 128 {
+		t.Fatal("manual device unbind failed", w.Code, w.Body.String())
+	}
+	if e = a.discover("phicomm/v2/"+userKey(users[0])+"/discovery/"+manualMAC, []byte(`{"schema":1,"protocol":"tmcp","protocol_version":2,"version":"v2","model":"tc1"}`)); e != nil {
+		t.Fatal(e)
+	}
+	if grant(connect(users[0]), manualTopic) != 128 {
+		t.Fatal("passive discovery restored removed permissions")
+	}
+	post(false)
+	if grant(connect(users[0]), manualTopic) == 128 {
+		t.Fatal("manual re-add did not restore TMCP permissions")
+	}
+	list, e = s.devices(users[0])
+	if e != nil || len(list) != 2 {
+		t.Fatal("manual device not visible", list, e)
 	}
 	// A fresh manager connection must replay retained announcements safely.
 	b2, e := newDynamicBroker(b.url, runtime+"/broker/certs/ca.crt", serviceUser, pass)
