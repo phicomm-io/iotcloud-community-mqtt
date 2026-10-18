@@ -30,7 +30,7 @@ func TestBannerPermissionsValidationAndPersistence(t *testing.T) {
 		t.Fatal(login.Code)
 	}
 	token := login.Header().Get("X-IotCloud-Session")
-	valid := Banner{Enabled: true, Text: "交流 QQ 群：1021750178", URL: "https://qm.qq.com/q/9L150V85kk?from=tim", Label: "加入 QQ 群"}
+	valid := Banner{Audience: "before_login", Enabled: true, Text: "交流 QQ 群：1021750178", URL: "https://qm.qq.com/q/9L150V85kk?from=tim", Label: "加入 QQ 群"}
 	raw, _ := json.Marshal(valid)
 	for _, method := range []string{"GET", "PUT"} {
 		if w := request(method, "/api/admin/banner", cfg.PublicURL, "", string(raw)); w.Code != 401 {
@@ -57,7 +57,7 @@ func TestBannerPermissionsValidationAndPersistence(t *testing.T) {
 		t.Fatal("configured announcement missing")
 	}
 	for _, bad := range []Banner{
-		{Enabled: true}, {Text: strings.Repeat("群", 301)}, {URL: "https://example.com"},
+		{Audience: "invalid"}, {Enabled: true}, {Text: strings.Repeat("群", 301)}, {URL: "https://example.com"},
 		{URL: "javascript:alert(1)", Label: "bad"}, {URL: "//evil.example", Label: "bad"},
 		{URL: "https://user:secret@example.com", Label: "bad"}, {URL: "https://good.example\\@evil.example", Label: "bad"},
 		{URL: "https://example.com\n", Label: "bad" + strings.Repeat("群", 41)},
@@ -76,6 +76,19 @@ func TestBannerPermissionsValidationAndPersistence(t *testing.T) {
 	}
 	if w := request("GET", "/api/banner", "", "", ""); w.Code != 200 || !strings.Contains(w.Body.String(), "1021750178") || w.Header().Get("Cache-Control") != "no-store" {
 		t.Fatal(w.Code, w.Body.String())
+	}
+	valid.Audience = "after_login"
+	raw, _ = json.Marshal(valid)
+	if w := request("PUT", "/api/admin/banner", cfg.PublicURL, token, string(raw)); w.Code != 200 {
+		t.Fatal(w.Code)
+	}
+	for _, invalidToken := range []string{"", "expired-token"} {
+		if w := request("GET", "/api/banner", "", invalidToken, ""); w.Code != 200 || strings.Contains(w.Body.String(), "1021750178") {
+			t.Fatal("post-login content disclosed", w.Code)
+		}
+	}
+	if w := request("GET", "/api/banner", "", token, ""); !strings.Contains(w.Body.String(), "1021750178") {
+		t.Fatal("active user missing post-login announcement")
 	}
 	valid.Enabled = false
 	raw, _ = json.Marshal(valid)

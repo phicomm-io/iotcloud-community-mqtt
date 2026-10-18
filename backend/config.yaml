@@ -18,6 +18,7 @@ contact_info: 如需帮助请联系管理员
 # initial configuration and persist independently in this node's database.
 banner:
   enabled: false
+  audience: before_login
   text: ""
   url: ""
   label: ""

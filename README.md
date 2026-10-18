@@ -229,9 +229,12 @@ allowed_origins:
 ```yaml
 banner:
   enabled: true
+  audience: before_login # or after_login
   text: "欢迎加入社区交流群"
   url: "https://example.com/community"
   label: "加入交流群"
 ```
 
 管理员也可在“账号与设备管理 → 平台公告”修改、预览或关闭公告；管理页保存的配置持久化在本节点数据库，优先于 YAML，重启后保留。关闭后仍保留草稿。两节点配置独立。`GET /api/banner` 公开返回已启用公告，管理员通过 `GET/PUT /api/admin/banner` 管理，写入受管理员权限及同源检查保护。正文为最多 300 字的纯文本，按钮文字最多 40 字，链接仅支持完整 HTTP/HTTPS 地址。
+
+`audience` 支持 `before_login`（默认，仅登录/注册页展示）和 `after_login`（仅登录用户展示，公开 API 也要求有效会话）。用户可延后 24 小时、在当前标签页忽略，或不再显示此条公告；偏好按节点与账号存于浏览器，更新内容后作为新公告处理。
