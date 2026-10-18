@@ -14,6 +14,13 @@ allowed_origins: []
 trust_proxy: true
 register_level: 1
 contact_info: 如需帮助请联系管理员
+# Optional platform announcement. Empty by default; admin changes override this
+# initial configuration and persist independently in this node's database.
+banner:
+  enabled: false
+  text: ""
+  url: ""
+  label: ""
 mqtt_uri: ""
 mqtt_ws_uri: ""
 smtp:

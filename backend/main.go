@@ -22,6 +22,7 @@ type SMTPConfig struct {
 	TLS      bool   `yaml:"tls"`
 }
 type Config struct {
+	Banner                  Banner       `yaml:"banner"`
 	GitHub                  GitHubConfig `yaml:"github"`
 	AllowedOrigins          []string     `yaml:"allowed_origins"`
 	DBPath                  string       `yaml:"db_path"`
@@ -82,6 +83,9 @@ func loadConfig(path string) error {
 	if cfg.RegisterLevel < 0 || cfg.RegisterLevel > 2 {
 		return errors.New("invalid register_level")
 	}
+	if err := cfg.Banner.validate(); err != nil {
+		return errors.New("invalid banner: " + err.Error())
+	}
 	return validateGitHubConfig()
 }
 func readSecret(path string) (string, error) {
@@ -105,6 +109,8 @@ func routes() http.Handler {
 	mux.HandleFunc("/api/admin/analytics", adminAuth(handleAnalytics))
 	mux.HandleFunc("/api/register", handleRegister)
 	mux.HandleFunc("/api/register/status", handleRegisterStatus)
+	mux.HandleFunc("/api/banner", handleBanner)
+	mux.HandleFunc("/api/admin/banner", adminAuth(handleAdminBanner))
 	mux.HandleFunc("/api/register/verify", handleVerifyEmail)
 	mux.HandleFunc("/api/auth/github/status", handleGitHubStatus)
 	mux.HandleFunc("/api/auth/github/start", handleGitHubStart)
