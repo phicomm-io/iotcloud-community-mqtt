@@ -170,6 +170,19 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if state == "pending" {
+		var githubPending int
+		if err = app.store.QueryRow("SELECT COUNT(*) FROM github_identities WHERE username=?", owner).Scan(&githubPending); err != nil {
+			operationError(w, err)
+			return
+		}
+		// An OAuth reservation has a website hash before Broker provisioning.
+		// Do not activate it until the device credentials actually work.
+		if githubPending > 0 {
+			if err = app.broker.Authenticate(principal, req.Password); err != nil {
+				operationError(w, err)
+				return
+			}
+		}
 		if _, err = app.store.Exec("UPDATE users SET state='active' WHERE username=? AND state='pending'", owner); err != nil {
 			operationError(w, err)
 			return

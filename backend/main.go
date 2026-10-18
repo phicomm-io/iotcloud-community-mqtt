@@ -22,23 +22,24 @@ type SMTPConfig struct {
 	TLS      bool   `yaml:"tls"`
 }
 type Config struct {
-	AllowedOrigins          []string   `yaml:"allowed_origins"`
-	DBPath                  string     `yaml:"db_path"`
-	BrokerURL               string     `yaml:"broker_url"`
-	BrokerCA                string     `yaml:"broker_ca"`
-	BrokerAdminUsername     string     `yaml:"broker_admin_username"`
-	BrokerAdminPasswordFile string     `yaml:"broker_admin_password_file"`
-	AdminUsername           string     `yaml:"admin_username"`
-	AdminPasswordFile       string     `yaml:"admin_password_file"`
-	PublicURL               string     `yaml:"public_url"`
-	TrustProxy              bool       `yaml:"trust_proxy"`
-	CookieSecure            bool       `yaml:"cookie_secure"`
-	RegisterLevel           int        `yaml:"register_level"`
-	ContactInfo             string     `yaml:"contact_info"`
-	MQTTUri                 string     `yaml:"mqtt_uri"`
-	MQTTWSUri               string     `yaml:"mqtt_ws_uri"`
-	SMTP                    SMTPConfig `yaml:"smtp"`
-	ListenAddr              string     `yaml:"listen_addr"`
+	GitHub                  GitHubConfig `yaml:"github"`
+	AllowedOrigins          []string     `yaml:"allowed_origins"`
+	DBPath                  string       `yaml:"db_path"`
+	BrokerURL               string       `yaml:"broker_url"`
+	BrokerCA                string       `yaml:"broker_ca"`
+	BrokerAdminUsername     string       `yaml:"broker_admin_username"`
+	BrokerAdminPasswordFile string       `yaml:"broker_admin_password_file"`
+	AdminUsername           string       `yaml:"admin_username"`
+	AdminPasswordFile       string       `yaml:"admin_password_file"`
+	PublicURL               string       `yaml:"public_url"`
+	TrustProxy              bool         `yaml:"trust_proxy"`
+	CookieSecure            bool         `yaml:"cookie_secure"`
+	RegisterLevel           int          `yaml:"register_level"`
+	ContactInfo             string       `yaml:"contact_info"`
+	MQTTUri                 string       `yaml:"mqtt_uri"`
+	MQTTWSUri               string       `yaml:"mqtt_ws_uri"`
+	SMTP                    SMTPConfig   `yaml:"smtp"`
+	ListenAddr              string       `yaml:"listen_addr"`
 }
 
 var cfg Config
@@ -81,7 +82,7 @@ func loadConfig(path string) error {
 	if cfg.RegisterLevel < 0 || cfg.RegisterLevel > 2 {
 		return errors.New("invalid register_level")
 	}
-	return nil
+	return validateGitHubConfig()
 }
 func readSecret(path string) (string, error) {
 	data, err := os.ReadFile(path)
@@ -105,6 +106,11 @@ func routes() http.Handler {
 	mux.HandleFunc("/api/register", handleRegister)
 	mux.HandleFunc("/api/register/status", handleRegisterStatus)
 	mux.HandleFunc("/api/register/verify", handleVerifyEmail)
+	mux.HandleFunc("/api/auth/github/status", handleGitHubStatus)
+	mux.HandleFunc("/api/auth/github/start", handleGitHubStart)
+	mux.HandleFunc("/api/auth/github/callback", handleGitHubCallback)
+	mux.HandleFunc("/api/auth/github/complete", handleGitHubComplete)
+	mux.HandleFunc("/api/auth/github/unlink", userAuth(handleGitHubUnlink))
 	mux.HandleFunc("/api/auth/login", handleLogin)
 	mux.HandleFunc("/api/auth/logout", userAuth(handleLogout))
 	mux.HandleFunc("/api/auth/me", userAuth(handleMe))

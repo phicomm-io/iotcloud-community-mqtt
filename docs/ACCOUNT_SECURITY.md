@@ -1,12 +1,14 @@
 # 统一账号与管理鉴权
 
-网站、管理员控制台、MQTT 使用同一套账号和 Broker 密码。管理员只是用户的管理角色，并不是第二套登录身份。
+网站、管理员控制台、MQTT 使用同一套账号，网站与 MQTT 密码可独立修改。管理员只是用户的管理角色，并不是第二套登录身份。
 
 ## 登录与权限
 
 - 从 `/login` 调用 `POST /api/auth/login`；登录与 `GET /api/auth/me` 返回 `username`、`is_admin`。
-- 网站使用随机、不透明的 `phicomm_session` Cookie：HttpOnly、SameSite=Lax、24 小时有效；SQLite 只保存会话 token 的 SHA-256 摘要。HTTPS 部署配置 `cookie_secure: true`。
-- 登录使用 Broker 验证密码。应用数据库不保存用户明文密码。管理员设备的 MQTT 凭据与普通登录凭据相同，仍只授权其自己的设备主题，不能读写 Broker 管理主题或其他用户的设备。
+- 网站使用随机、不透明的 `phicomm_session` Cookie：HttpOnly、SameSite=Lax、30 天有效；SQLite 只保存会话 token 的 SHA-256 摘要。HTTPS 部署配置 `cookie_secure: true`。
+- 密码登录使用独立的网站密码哈希；旧账号首次成功登录时验证 Broker 凭据并建立网站密码哈希。应用数据库不保存用户明文密码。管理员 MQTT 账号仍只授权其自己的设备主题，不能读写 Broker 管理主题或其他用户的设备。
+- 可选 [GitHub 登录](GITHUB_LOGIN.md) 使用 GitHub 数字 ID 绑定统一账号，保留数据库中的原有角色和设备权限；新用户不会获得管理员角色。已有账号须先登录后绑定，不按邮箱或用户名自动合并。解绑需要网站密码，撤销该账号全部网站会话。
+- 可信跨域前端通过 `X-IotCloud-Session` 获取同一网站会话并以 Bearer 传递；按后端来源隔离保存，不依赖第三方 Cookie。来源需精确配置到 `allowed_origins`。
 - 前端只给管理员显示管理入口，路由也检查管理权限；前端限制不能替代服务端鉴权。
 - 所有 `/api/admin/*` 管理请求都检查有效网站会话、账号 active 状态和数据库中的当前管理员角色。匿名请求返回 401，普通用户返回 403。角色撤销后，下一个管理请求立即被拒绝。
 - 所有会话写请求执行 Origin 同源校验，角色管理也不例外。旧 `/api/admin/login` 和独立 Bearer token 认证已移除。

@@ -33,9 +33,26 @@ func validateAccount(user, password string) error {
 func (a *Application) register(user, password string) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
+	return a.registerLocked(user, password)
+}
+
+// registerLocked shares the account mutation lock with OAuth completion.
+func (a *Application) registerLocked(user, password string) error {
 	state, err := a.store.state(user)
 	if err == nil {
 		if state == "pending" {
+			// OAuth reservations already have an owner and password, even if the
+			// Broker was unavailable. Public registration must not adopt them.
+			var githubPending int
+			if err = a.store.QueryRow("SELECT COUNT(*) FROM github_identities WHERE username=?", user).Scan(&githubPending); err != nil {
+				return err
+			}
+			if githubPending > 0 {
+				if err = a.authenticateWebsite(user, user, password); err != nil {
+					return err
+				}
+			}
+
 			if authErr := a.broker.Authenticate(user, password); authErr == nil {
 				if err = a.saveWebsitePassword(user, password); err != nil {
 					return err

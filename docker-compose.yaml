@@ -29,6 +29,7 @@ services:
       - ./runtime/app:/data
       - ./runtime/secrets/broker-password:/run/secrets/broker-password:ro
       - ./runtime/secrets/admin-password:/run/secrets/admin-password:ro
+      - ./runtime/secrets:/run/oauth-secrets:ro
       - ./runtime/broker/certs/ca.crt:/run/broker-ca.crt:ro
     environment:
       MQTT_URI: "${MQTT_URI:-}"

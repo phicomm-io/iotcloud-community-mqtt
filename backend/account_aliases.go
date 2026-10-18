@@ -89,7 +89,11 @@ func (s *Store) accountInfo(user string) (map[string]interface{}, error) {
 	if err := s.QueryRow("SELECT mqtt_separate FROM account_passwords WHERE username=?", user).Scan(&separate); err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
-	return map[string]interface{}{"mqtt_password_separate": separate, "username": user, "mqtt_username": mqttUser, "is_admin": s.isAdmin(user), "aliases": aliases}, nil
+	var githubLogin string
+	if err := s.QueryRow("SELECT login FROM github_identities WHERE username=?", user).Scan(&githubLogin); err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+	return map[string]interface{}{"github_login": githubLogin, "mqtt_password_separate": separate, "username": user, "mqtt_username": mqttUser, "is_admin": s.isAdmin(user), "aliases": aliases}, nil
 }
 func (a *Application) addMQTTAlias(user, name, password string) error {
 	if err := validateUsername(name); err != nil {

@@ -24,3 +24,9 @@ smtp:
   from: ""
   tls: true
 listen_addr: :8080
+
+# Optional GitHub OAuth App. Both fields empty keeps GitHub login disabled.
+# public_url must be the backend HTTPS origin; keep the secret outside Git.
+github:
+  client_id: ""
+  client_secret_file: ""
