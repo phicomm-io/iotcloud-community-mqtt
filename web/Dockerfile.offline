@@ -1,0 +1,7 @@
+# Build context must be a frontend bundle verified against frontend.lock.json.
+# Place nginx.conf from this repository in that context before building.
+FROM nginx:alpine
+COPY platform /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

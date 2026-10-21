@@ -123,6 +123,7 @@ func routes() http.Handler {
 	mux.HandleFunc("/api/auth/password", userAuth(handlePassword))
 	mux.HandleFunc("/api/auth/mqtt-password", userAuth(handleMQTTPassword))
 	mux.HandleFunc("/api/auth/alias", userAuth(handleAliases))
+	mux.HandleFunc("/api/integrations/bemfa", userAuth(handleBemfa))
 	mux.HandleFunc("/api/devices", userAuth(handleDevices))
 	mux.HandleFunc("/api/devices/", userAuth(handleDevice))
 	mux.HandleFunc("/api/admin/users", adminAuth(handleUsers))
@@ -204,6 +205,14 @@ func main() {
 	}
 	defer broker.Close()
 	app = &Application{store: store, broker: broker}
+	seal, err := openBemfaKey(cfg.DBPath + ".bemfa.key")
+	if err != nil {
+		log.Fatalf("open Bemfa encryption key: %v", err)
+	}
+	app.bemfa = newBemfaRelay(app, seal)
+	broker.watchRelay(app.bemfa.deviceEvent)
+	app.bemfa.start()
+	defer app.bemfa.Close()
 	// Upgrade the manager role in place, including installations initialized before discovery support.
 	go func() {
 		for {
@@ -215,6 +224,7 @@ func main() {
 					}
 				})
 				if err = broker.subscribeDiscovery(broker.client); err == nil {
+					broker.refreshRelay()
 					break
 				}
 			}

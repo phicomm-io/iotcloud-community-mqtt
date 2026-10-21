@@ -10,13 +10,18 @@ import (
 )
 
 func managerRules() []Rule {
-	return []Rule{
+	rules := []Rule{
 		{"publishClientSend", "$CONTROL/dynamic-security/v1", true, 1},
 		{"publishClientReceive", "$CONTROL/dynamic-security/v1/response", true, 1},
 		{"subscribeLiteral", "$CONTROL/dynamic-security/v1/response", true, 1},
 		{"publishClientReceive", "phicomm/v2/+/discovery/+", true, 1},
 		{"subscribePattern", "phicomm/v2/+/discovery/+", true, 1},
 	}
+	for _, leaf := range []string{"state", "availability", "result"} {
+		topic := "phicomm/v2/+/+/+/" + leaf
+		rules = append(rules, Rule{"publishClientReceive", topic, true, 1}, Rule{"subscribePattern", topic, true, 1})
+	}
+	return append(rules, Rule{"publishClientSend", "phicomm/v2/+/+/+/command", true, 1})
 }
 
 // Encoding is bijective and never introduces MQTT wildcard/path characters.

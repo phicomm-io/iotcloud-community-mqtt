@@ -13,6 +13,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -38,12 +39,14 @@ type Broker interface {
 	Authenticate(string, string) error
 }
 type DynamicBroker struct {
-	client    mqtt.Client
-	url       string
-	tls       *tls.Config
-	mu        sync.Mutex
-	pending   map[string]chan brokerReply
-	discovery func(string, []byte)
+	relayRefreshing atomic.Bool
+	client          mqtt.Client
+	url             string
+	tls             *tls.Config
+	mu              sync.Mutex
+	pending         map[string]chan brokerReply
+	discovery       func(string, []byte)
+	relay           func(string, []byte, bool)
 }
 
 func randomID() string {
@@ -78,16 +81,19 @@ func newDynamicBroker(url, ca, user, pass string) (*DynamicBroker, error) {
 		}
 		b.tls = &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12}
 	}
-	opts := mqtt.NewClientOptions().AddBroker(url).SetUsername(user).SetPassword(pass).SetClientID("manager_" + randomID()[:16]).SetConnectTimeout(5 * time.Second).SetAutoReconnect(true).SetConnectRetry(true).SetConnectRetryInterval(time.Second).SetMaxReconnectInterval(2 * time.Second).SetOrderMatters(false)
+	opts := mqtt.NewClientOptions().AddBroker(url).SetUsername(user).SetPassword(pass).SetClientID("manager_" + randomID()[:16]).SetConnectTimeout(5 * time.Second).SetAutoReconnect(true).SetConnectRetry(true).SetConnectRetryInterval(time.Second).SetMaxReconnectInterval(2 * time.Second).SetOrderMatters(false).SetWriteTimeout(3 * time.Second)
 	if b.tls != nil {
 		opts.SetTLSConfig(b.tls)
 	}
 	opts.OnConnect = func(c mqtt.Client) {
 		_ = b.subscribeDiscovery(c)
+		b.notifyRelayReset()
+		_ = b.subscribeRelay(c)
 		if err := waitToken(c.Subscribe("$CONTROL/dynamic-security/v1/response", 1, b.receive)); err != nil {
 			c.Disconnect(0)
 		}
 	}
+	opts.OnConnectionLost = func(_ mqtt.Client, _ error) { b.notifyRelayReset() }
 	b.client = mqtt.NewClient(opts)
 	b.client.Connect()
 	return b, nil
@@ -227,4 +233,51 @@ func hasRole(data json.RawMessage, role string) bool {
 		}
 	}
 	return false
+}
+
+// Relay writes use QoS0, retain=false and an open connection check. Paho must
+// never store an actuation for transmission after reconnect.
+func (b *DynamicBroker) relayPublish(topic string, payload []byte) error {
+	if !b.client.IsConnectionOpen() {
+		return errUnavailable
+	}
+	return waitToken(b.client.Publish(topic, 0, false, payload))
+}
+func (b *DynamicBroker) watchRelay(f func(string, []byte, bool)) {
+	b.mu.Lock()
+	b.relay = f
+	b.mu.Unlock()
+}
+func (b *DynamicBroker) notifyRelayReset() {
+	b.mu.Lock()
+	f := b.relay
+	b.mu.Unlock()
+	if f != nil {
+		f("", nil, false)
+	}
+}
+func (b *DynamicBroker) subscribeRelay(c mqtt.Client) error {
+	topics := map[string]byte{}
+	for _, leaf := range []string{"state", "availability", "result"} {
+		topics["phicomm/v2/+/+/+/"+leaf] = 0
+	}
+	return waitToken(c.SubscribeMultiple(topics, func(_ mqtt.Client, m mqtt.Message) {
+		b.mu.Lock()
+		f := b.relay
+		b.mu.Unlock()
+		if f != nil {
+			f(m.Topic(), m.Payload(), m.Retained())
+		}
+	}))
+}
+func (b *DynamicBroker) refreshRelay() {
+	if !b.relayRefreshing.CompareAndSwap(false, true) {
+		return
+	}
+	go func() {
+		defer b.relayRefreshing.Store(false)
+		if b.client.IsConnectionOpen() {
+			_ = b.subscribeRelay(b.client)
+		}
+	}()
 }

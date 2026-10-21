@@ -2,7 +2,11 @@
 # Full local Compose/browser verification with private temporary data and random ports.
 set -eu
 project_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-frontend_bundle=$(python3 "$project_root/scripts/frontend_release.py")
+if [ -n "${FRONTEND_ARCHIVE:-}" ]; then
+ frontend_bundle=$(python3 "$project_root/scripts/frontend_release.py" --archive "$FRONTEND_ARCHIVE")
+else
+ frontend_bundle=$(python3 "$project_root/scripts/frontend_release.py")
+fi
 frontend_src="$frontend_bundle/source/frontend"
 npm --prefix "$frontend_src" ci
 if [ "${CI:-}" = true ]; then
@@ -15,7 +19,13 @@ test_project="phicomm-browser-$$"
 compose() { HTTP_PORT=127.0.0.1:0 MQTT_PORT=127.0.0.1:0 PUBLIC_URL= MQTT_URI= MQTT_WS_URI= docker compose -p "$test_project" -f "$project_root/docker-compose.yaml" -f "$test_runtime/override.yaml" "$@"; }
 cleanup() { if [ "$?" -ne 0 ]; then compose logs --tail 25 >&2 || true; fi; compose down >/dev/null 2>&1 || true; rm -rf "$test_runtime"; }
 trap cleanup EXIT INT TERM
-(cd "$project_root" && docker compose build backend nginx)
+if [ -n "${FRONTEND_ARCHIVE:-}" ]; then
+ (cd "$project_root" && docker compose build backend)
+ cp "$project_root/nginx/nginx.conf" "$frontend_bundle/nginx.conf"
+ docker build -f "$project_root/web/Dockerfile.offline" -t phicomm-community-mqtt-web:local "$frontend_bundle"
+else
+ (cd "$project_root" && docker compose build backend nginx)
+fi
 mkdir "$test_runtime/runtime"
 docker run --rm --user "$(id -u):$(id -g)" -v "$test_runtime/runtime:/runtime" phicomm-community-mqtt-backend:local init --output /runtime
 cat > "$test_runtime/override.yaml" <<YAML

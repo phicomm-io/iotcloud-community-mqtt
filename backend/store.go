@@ -88,6 +88,7 @@ func openStore(path string) (*Store, error) {
  CREATE TABLE IF NOT EXISTS github_identities(subject TEXT PRIMARY KEY,username TEXT NOT NULL UNIQUE REFERENCES users(username) ON DELETE CASCADE,login TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS github_oauth_flows(state TEXT PRIMARY KEY,browser_challenge TEXT NOT NULL,verifier TEXT NOT NULL,return_url TEXT NOT NULL,link_session TEXT NOT NULL DEFAULT '',phase TEXT NOT NULL DEFAULT 'pending',subject TEXT NOT NULL DEFAULT '',login TEXT NOT NULL DEFAULT '',email TEXT NOT NULL DEFAULT '',error TEXT NOT NULL DEFAULT '',expires INTEGER NOT NULL);
  CREATE INDEX IF NOT EXISTS github_flow_expiry ON github_oauth_flows(expires);
+ CREATE TABLE IF NOT EXISTS bemfa_integrations(username TEXT PRIMARY KEY REFERENCES users(username) ON DELETE CASCADE,config BLOB NOT NULL,revision TEXT NOT NULL,key_hash TEXT UNIQUE);
  CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY,value TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS analytics_events(id INTEGER PRIMARY KEY,ts INTEGER NOT NULL,visitor TEXT NOT NULL,visit TEXT NOT NULL,event TEXT NOT NULL,page TEXT NOT NULL,model TEXT NOT NULL,referrer TEXT NOT NULL,browser TEXT NOT NULL,os TEXT NOT NULL,screen TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS verification_emails(id INTEGER PRIMARY KEY AUTOINCREMENT,email TEXT NOT NULL,code TEXT NOT NULL DEFAULT '',created_at INTEGER NOT NULL,sent_at INTEGER NOT NULL DEFAULT 0,expires_at INTEGER NOT NULL DEFAULT 0,status TEXT NOT NULL,detail TEXT NOT NULL DEFAULT '',registered_at INTEGER NOT NULL DEFAULT 0,username TEXT NOT NULL DEFAULT '');
@@ -146,6 +147,7 @@ func (s *Store) device(mac string) (Device, error) {
 type Application struct {
 	store  *Store
 	broker Broker
+	bemfa  *BemfaRelay
 	mu     sync.Mutex
 }
 
