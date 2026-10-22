@@ -51,6 +51,7 @@ func (a *Application) accountRules(username string) ([]Rule, error) {
 	// account-scoped publishClientReceive ACLs below still filter every message.
 	// Never grant broad receive/send access alongside these subscription rules.
 	rules := []Rule{
+		{"publishClientSend", "homeassistant/status", true, 1},
 		{"subscribeLiteral", "homeassistant/status", true, 1},
 		{"publishClientReceive", "homeassistant/status", true, 1},
 		{"subscribePattern", "homeassistant/+/+/config", true, 1},
