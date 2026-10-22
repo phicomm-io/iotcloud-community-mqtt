@@ -150,6 +150,27 @@ func TestRealDynamicSecurityHADiscovery(t *testing.T) {
 			publish(u, topic, "live-"+u, false)
 		}
 		assertReceived("live-", false)
+		// HA sends this birth notification after an integration reload. All
+		// accounts can publish this exact topic and receive the notification.
+		for u, c := range clients {
+			tok := c.Subscribe("homeassistant/status", 1, nil)
+			if err := waitToken(tok); err != nil || tok.(*mqtt.SubscribeToken).Result()["homeassistant/status"] == 128 {
+				t.Fatal("HA birth subscription denied", u, err)
+			}
+		}
+		for _, sender := range []string{owner, alias, other} {
+			publish(sender, "homeassistant/status", "online", false)
+			for u, inbox := range inboxes {
+				select {
+				case got := <-inbox:
+					if got.topic != "homeassistant/status" || got.payload != "online" || got.retained {
+						t.Fatalf("unexpected HA birth delivery to %s: %+v", u, got)
+					}
+				case <-time.After(5 * time.Second):
+					t.Fatal("HA birth missing", sender, u)
+				}
+			}
+		}
 		for _, c := range clients {
 			c.Disconnect(0)
 		}
