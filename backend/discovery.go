@@ -297,9 +297,8 @@ func (a *Application) registerScopedDevice(d Device, restoreHidden bool) error {
 		if existing.Model != d.Model || existing.Version != d.Version || existing.Status == "deleting" {
 			return errConflict
 		}
-		if existing.Status == "active" && !restoreHidden {
-			return nil
-		}
+		// Reannouncements refresh the canonical ACL after server upgrades. An
+		// active database row does not imply that its broker role is up to date.
 		if existing.Status == "hidden" {
 			_, err = a.store.Exec("UPDATE scoped_devices SET status='pending' WHERE username=? AND mqtt_username=? AND mac=?", owner, principal, d.MAC)
 			if err != nil {
