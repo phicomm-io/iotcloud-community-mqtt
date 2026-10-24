@@ -30,7 +30,7 @@ func addDeviceRequest(t *testing.T, admin bool, model, version string) *httptest
 
 func TestManualTMCPRegistrationAndRestore(t *testing.T) {
 	for _, admin := range []bool{false, true} {
-		for _, model := range []string{"tc1", "m1", "a1"} {
+		for _, model := range []string{"tc1", "m1", "a1", "daikin"} {
 			t.Run(fmt.Sprintf("admin=%t/%s", admin, model), func(t *testing.T) {
 				a := testApp(t)
 				app = a
@@ -48,7 +48,11 @@ func TestManualTMCPRegistrationAndRestore(t *testing.T) {
 						t.Fatal("incorrect device role assignment", b.attached)
 					}
 					want := "phicomm/v2/" + userKey("alice") + "/" + model + "/" + mac + "/#"
-					if rules := b.acl[role]; len(rules) != 3 || rules[2].ACLType != "subscribePattern" || rules[2].Topic != want || !rules[2].Allow {
+					expected := 3
+					if model == "m1" || model == "daikin" {
+						expected = 6
+					}
+					if rules := b.acl[role]; len(rules) != expected || rules[2].ACLType != "subscribePattern" || rules[2].Topic != want || !rules[2].Allow {
 						t.Fatal("incorrect TMCP ACL", rules)
 					}
 				}

@@ -55,12 +55,12 @@ func validateDevice(d *Device) error {
 		if d.Version != "v1" && d.Version != "v2" {
 			return errors.New("TC1 协议必须为 v1/v2")
 		}
-	case "m1", "a1":
+	case "m1", "a1", "daikin":
 		if d.Version == "" {
 			d.Version = "v2"
 		}
 		if d.Version != "v2" {
-			return errors.New("M1/A1 仅支持 TMCP")
+			return errors.New("传感器与净化器仅支持 TMCP")
 		}
 	default:
 		return errors.New("设备型号不支持")

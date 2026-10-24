@@ -40,7 +40,12 @@ func deviceRole(d Device) string {
 }
 func scopeRules(d Device) []Rule {
 	topic := "phicomm/v2/" + userKey(topicUsername(d)) + "/" + d.Model + "/" + d.MAC + "/#"
-	return []Rule{{"publishClientSend", topic, true, 1}, {"publishClientReceive", topic, true, 1}, {"subscribePattern", topic, true, 1}}
+	rules := []Rule{{"publishClientSend", topic, true, 1}, {"publishClientReceive", topic, true, 1}, {"subscribePattern", topic, true, 1}}
+	if d.Model == "m1" || d.Model == "daikin" {
+		base := "phicomm/v2/" + userKey(topicUsername(d)) + "/sensor/" + d.MAC
+		rules = append(rules, Rule{"publishClientSend", base + "/state", true, 1}, Rule{"publishClientReceive", base + "/command", true, 1}, Rule{"subscribeLiteral", base + "/command", true, 1})
+	}
+	return rules
 }
 func (a *Application) accountRules(username string) ([]Rule, error) {
 	principals, err := a.store.mqttPrincipals(username)
@@ -80,6 +85,8 @@ func (a *Application) accountRules(username string) ([]Rule, error) {
 		}
 	}
 	for key := range linked {
+		base := "phicomm/v2/" + key + "/sensor/"
+		rules = append(rules, Rule{"publishClientReceive", base + "+/state", true, 1}, Rule{"subscribePattern", base + "+/state", true, 1}, Rule{"publishClientSend", base + "+/command", true, 1})
 		for _, kind := range []string{"publishClientReceive", "subscribePattern"} {
 			rules = append(rules, Rule{kind, "phicomm/v2/" + key + "/address/+", true, 1})
 		}
