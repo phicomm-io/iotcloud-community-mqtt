@@ -171,8 +171,8 @@ func TestRealPersistence(t *testing.T) {
 		if e = a.register(user, password); e != nil {
 			t.Fatal(e)
 		}
-		for i, model := range []string{"tc1", "m1", "a1"} {
-			mac := []string{"aa1111111111", "aa2222222222", "aa3333333333"}[i]
+		for i, model := range []string{"tc1", "m1", "a1", "daikin"} {
+			mac := []string{"aa1111111111", "aa2222222222", "aa3333333333", "aa4444444444"}[i]
 			if model == "tc1" {
 				e = a.saveDevice(user, Device{MAC: mac, Model: model, Version: "v1"}, false)
 			} else {
@@ -191,7 +191,7 @@ func TestRealPersistence(t *testing.T) {
 		t.Fatal("password not persisted", e)
 	}
 	ds, e := s.devices(user)
-	if e != nil || len(ds) != 4 {
+	if e != nil || len(ds) != 5 {
 		t.Fatal("database not persisted", ds, e)
 	}
 	data, e := b.Command("getClient", map[string]interface{}{"username": user})
@@ -453,7 +453,7 @@ func TestRealDynamicSecurityAliasesAndLinkage(t *testing.T) {
 	if err = b.Authenticate(alias, pw); err != nil {
 		t.Fatal("MQTT alias rejected", err)
 	}
-	for _, entry := range []struct{ u, mac, model string }{{alias, "aabbccddeeff", "a1"}, {alias, "001122334455", "m1"}, {other, "aabbccddeeff", "a1"}} {
+	for _, entry := range []struct{ u, mac, model string }{{alias, "aabbccddeeff", "a1"}, {alias, "001122334455", "m1"}, {alias, "001122334456", "daikin"}, {other, "aabbccddeeff", "a1"}} {
 		if err = a.discover("phicomm/v2/"+userKey(entry.u)+"/discovery/"+entry.mac, []byte(`{"schema":1,"protocol":"tmcp","protocol_version":2,"version":"v2","model":"`+entry.model+`"}`)); err != nil {
 			t.Fatal(err)
 		}
@@ -486,7 +486,8 @@ func TestRealDynamicSecurityAliasesAndLinkage(t *testing.T) {
 	bind := "phicomm/v2/" + key + "/m1/001122334455/link/aabbccddeeff/result"
 	address := "phicomm/v2/" + key + "/a1/aabbccddeeff/link/001122334455/query"
 	group := "phicomm/linkage/" + key + "/living-room:00:00:00:00:00:00/fan/set"
-	for _, topic := range []string{bind, address, group, "phicomm/v2/" + key + "/address/+", "phicomm/v2/" + key + "/a1/aabbccddeeff/link/+/query"} {
+	sensor := "phicomm/v2/" + key + "/sensor/"
+	for _, topic := range []string{bind, address, group, "phicomm/v2/" + key + "/address/+", "phicomm/v2/" + key + "/a1/aabbccddeeff/link/+/query", sensor + "+/state", sensor + "001122334455/command", sensor + "001122334456/command"} {
 		if grant(own, topic, nil) == 128 {
 			t.Fatal("own linkage denied", topic)
 		}
@@ -496,9 +497,14 @@ func TestRealDynamicSecurityAliasesAndLinkage(t *testing.T) {
 			t.Fatal("unexpected permission", topic)
 		}
 	}
+	for _, topic := range []string{"phicomm/v2/" + foreignKey + "/sensor/+/state", "phicomm/v2/" + foreignKey + "/sensor/001122334456/command", sensor + "ffffffffffff/command"} {
+		if grant(own, topic, nil) != 128 {
+			t.Fatal("unexpected sensor permission", topic)
+		}
+	}
 	deliveries := make(chan string, 10)
 	handler := func(_ mqtt.Client, m mqtt.Message) { deliveries <- string(m.Payload()) }
-	for _, topic := range []string{bind, address, group, "phicomm/v2/" + key + "/address/001122334455"} {
+	for _, topic := range []string{bind, address, group, "phicomm/v2/" + key + "/address/001122334455", sensor + "001122334455/state", sensor + "001122334456/state", sensor + "001122334455/command", sensor + "001122334456/command"} {
 		if grant(own, topic, handler) == 128 {
 			t.Fatal(topic)
 		}
@@ -515,13 +521,15 @@ func TestRealDynamicSecurityAliasesAndLinkage(t *testing.T) {
 		}
 	}
 	// Cross-account and unregistered address spoofing must not reach a subscribed receiver.
-	if err = waitToken(foreign.Publish(group, 1, false, "foreign")); err != nil {
-		t.Fatal(err)
-	}
-	select {
-	case value := <-deliveries:
-		t.Fatal("cross-account publish delivered", value)
-	case <-time.After(300 * time.Millisecond):
+	for _, topic := range []string{group, sensor + "001122334455/state", sensor + "001122334456/state", sensor + "001122334456/command"} {
+		if err = waitToken(foreign.Publish(topic, 1, false, "foreign")); err != nil {
+			t.Fatal(err)
+		}
+		select {
+		case value := <-deliveries:
+			t.Fatal("cross-account publish delivered", value)
+		case <-time.After(300 * time.Millisecond):
+		}
 	}
 	app = a
 	t.Cleanup(func() { app = nil })
