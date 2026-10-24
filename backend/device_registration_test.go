@@ -5,9 +5,45 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 )
+
+func TestDiscoveryRefreshesExistingSensorACL(t *testing.T) {
+	for _, model := range []string{"m1", "daikin"} {
+		t.Run(model, func(t *testing.T) {
+			a := testApp(t)
+			b := a.broker.(*fakeBroker)
+			const mac = "aabbccddeeff"
+			topic := "phicomm/v2/" + userKey("alice") + "/discovery/" + mac
+			payload := []byte(fmt.Sprintf(`{"schema":1,"protocol":"tmcp","protocol_version":2,"version":"v2","model":%q}`, model))
+			if err := a.discover(topic, payload); err != nil {
+				t.Fatal(err)
+			}
+			devices, err := a.store.scopedDevices("alice")
+			if err != nil || len(devices) != 1 || devices[0].Status != "active" {
+				t.Fatal(devices, err)
+			}
+			d := devices[0]
+			role := deviceRole(d)
+			// Simulate a role created before generic sensor topics were supported.
+			b.acl[role] = append([]Rule(nil), scopeRules(d)[:3]...)
+			for i := 0; i < 2; i++ {
+				if err := a.discover(topic, payload); err != nil {
+					t.Fatal(err)
+				}
+				if !reflect.DeepEqual(b.acl[role], scopeRules(d)) || !b.attached["alice"][role] || b.attached["bob"][role] {
+					t.Fatal("existing sensor ACL was not repaired with isolated ownership", b.acl[role], b.attached)
+				}
+				got, err := a.store.scopedDevices("alice")
+				if err != nil || !reflect.DeepEqual(got, devices) {
+					t.Fatal("reannouncement changed device identity or status", got, err)
+				}
+			}
+		})
+	}
+}
 
 func addDeviceRequest(t *testing.T, admin bool, model, version string) *httptest.ResponseRecorder {
 	t.Helper()
