@@ -16,6 +16,6 @@
 | 真实巴法云 / 小爱同学 | NOT_RUN | 未使用用户凭据，未向外部账号写入 |
 | 实机控制、刷机、生产部署 | NOT_RUN | 本次只完成分支、代码和隔离环境验证 |
 
-最后完整锁定包 SHA-256 以 `frontend.lock.json` 为准。本地包位于相邻前端工作区 `build/frontend.tar.gz`；常规 web 镜像所需的远端前端 Release 尚未发布，离线验证方式见 `bemfa-cloud.md`。
+上表是原分支与上述前端提交的历史验证记录。当前平台前端已固定到 `63f35063bb5175ba9306aae59b11a3dd26ce55b1`，对应[不可变归档](https://github.com/phicomm-io/iotcloud-community-frontend/releases/download/frontend-63f35063bb5175ba9306aae59b11a3dd26ce55b1/frontend.tar.gz)已在远端发布并通过 SHA-256 / 完整 manifest 校验；固定归档信息和 SHA-256 见 `frontend.lock.json`，离线验证方式仍见 `bemfa-cloud.md`。新归档的发布不表示上表历史用例已在其上复跑，也不表示生产后端部署或 v1.0 正式发布。
 
 固件新分支相对当前 `origin/main` 仅新增 `docs/bemfa-cloud.md`。原模块方案和实机测试产物留在原工作区，未搬入本分支。
