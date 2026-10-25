@@ -215,12 +215,12 @@ func TestSessionsCSRFAndAdminSeparation(t *testing.T) {
 func TestAccountAndDeviceInputBoundaries(t *testing.T) {
 	cfg.AdminUsername = "admin"
 	cfg.BrokerAdminUsername = serviceUser
-	for _, u := range []string{"valid-user", "valid+tag@example.com"} {
+	for _, u := range []string{"valid-user", "valid_name.123", strings.Repeat("a", 32)} {
 		if e := validateAccount(u, "secret123"); e != nil {
 			t.Fatal(u, e)
 		}
 	}
-	for _, u := range []string{"admin", serviceUser, "__reserved", "abc\\def", "abc/def", "abc\nxyz"} {
+	for _, u := range []string{"admin", serviceUser, "__reserved", "abc\\def", "abc/def", "abc\nxyz", "valid+tag@example.com", strings.Repeat("a", 33)} {
 		if e := validateAccount(u, "secret123"); e == nil {
 			t.Fatal("unsafe account", u)
 		}

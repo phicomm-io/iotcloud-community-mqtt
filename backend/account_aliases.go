@@ -9,10 +9,12 @@ import (
 	"time"
 )
 
+// Only new MQTT principals use this limit. Legacy primary names remain valid
+// for lookup and login; verified email aliases never become MQTT principals.
 var shortUsernameRegex = regexp.MustCompile(`^[A-Za-z0-9_.\-]{3,32}$`)
-var errAccountName = errors.New("用户名或别名已被使用")
-var errInvalidUsername = errors.New("用户名须为 3–32 个字母、数字、下划线、点或连字符，且不能为保留账号")
-var errAliasLimit = errors.New("每个账号只支持一个 MQTT 别名，请使用已有别名")
+var errAccountName = errors.New(messageText("e.916c788017f9"))
+var errInvalidUsername = errors.New(messageText("e.1ef6a7c0d805"))
+var errAliasLimit = errors.New(messageText("e.83fae2be3f27"))
 
 func validateUsername(name string) error {
 	if !shortUsernameRegex.MatchString(name) || reservedUser(name) || name == cfg.AdminUsername {
@@ -190,7 +192,7 @@ func handleAliases(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !allowAttempt(r, "alias", 10, time.Minute) {
-		jsonError(w, "请求过于频繁", 429)
+		jsonError(w, messageText("e.9be2505cb51c"), 429)
 		return
 	}
 	if err := app.addMQTTAlias(currentUser(r), strings.TrimSpace(req.Alias), req.Password); err != nil {
@@ -247,6 +249,12 @@ func (s *Store) migrateScopedIdentities() error {
 
 // Reserve the verified email alongside the username before creating the Broker client.
 func (a *Application) registerWithEmail(user, password, email string, verified bool) error {
+	if err := validateAccount(user, password); err != nil {
+		return err
+	}
+	if verified && (!emailRegex.MatchString(email) || len(email) > 254) {
+		return errors.New(messageText("e.132431225954"))
+	}
 	if verified {
 		a.mu.Lock()
 		var owner, kind string

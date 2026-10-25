@@ -133,11 +133,11 @@ func routes() http.Handler {
 	mux.HandleFunc("/api/admin/verification-emails", adminAuth(handleVerificationEmails))
 	mux.HandleFunc("/api/admin/config", adminAuth(handleConfig))
 	mux.HandleFunc("/api/admin/acl", adminAuth(func(w http.ResponseWriter, r *http.Request) {
-		jsonError(w, "已改为结构化设备权限管理", http.StatusGone)
+		jsonError(w, messageText("e.cb5ee4993128"), http.StatusGone)
 	}))
 	mux.HandleFunc("/api/ping", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
-			jsonError(w, "方法不允许", 405)
+			jsonError(w, messageText("e.4f34574afee4"), 405)
 			return
 		}
 		if target := safeReturnTo(r.URL.Query().Get("return_to")); target != "" {
@@ -146,9 +146,12 @@ func routes() http.Handler {
 		}
 		jsonResp(w, map[string]bool{"ok": true})
 	})
-	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { jsonError(w, "接口不存在", 404) })
+	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { jsonError(w, messageText("e.c49d8684e46f"), 404) })
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		language := preferredLanguage(r.Header.Get("Accept-Language"))
 		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Content-Language", language)
+		w.Header().Add("Vary", "Accept-Language")
 		origin := r.Header.Get("Origin")
 		w.Header().Add("Vary", "Origin")
 		if origin != "" && allowedFrontend(origin) {
@@ -160,7 +163,7 @@ func routes() http.Handler {
 		}
 		if r.Method == http.MethodOptions {
 			if !allowedFrontend(origin) {
-				jsonError(w, "请求来源不允许", 403)
+				jsonError(w, messageText("e.2f31aac81862"), 403)
 				return
 			}
 			w.WriteHeader(http.StatusNoContent)
@@ -236,7 +239,7 @@ func main() {
 			if err := app.bootstrapAdmin(); err == nil {
 				return
 			} else {
-				log.Printf("管理员账号初始化未完成: %v", err)
+				log.Printf(messageText("e.1e06fa3ced5f"), err)
 			}
 			time.Sleep(2 * time.Second)
 		}
@@ -245,7 +248,7 @@ func main() {
 	go func() {
 		for {
 			if err := app.reconcile(); err != nil {
-				log.Printf("权限同步未完成: %v", err)
+				log.Printf(messageText("e.74b6d213d243"), err)
 			}
 			time.Sleep(10 * time.Second)
 		}

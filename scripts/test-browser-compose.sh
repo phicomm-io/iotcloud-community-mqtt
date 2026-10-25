@@ -22,12 +22,12 @@ trap cleanup EXIT INT TERM
 if [ -n "${FRONTEND_ARCHIVE:-}" ]; then
  (cd "$project_root" && docker compose build backend)
  cp "$project_root/nginx/nginx.conf" "$frontend_bundle/nginx.conf"
- docker build -f "$project_root/web/Dockerfile.offline" -t phicomm-community-mqtt-web:local "$frontend_bundle"
+ docker build -f "$project_root/web/Dockerfile.offline" -t iotcloud-community-mqtt-web:local "$frontend_bundle"
 else
  (cd "$project_root" && docker compose build backend nginx)
 fi
 mkdir "$test_runtime/runtime"
-docker run --rm --user "$(id -u):$(id -g)" -v "$test_runtime/runtime:/runtime" phicomm-community-mqtt-backend:local init --output /runtime
+docker run --rm --user "$(id -u):$(id -g)" -v "$test_runtime/runtime:/runtime" iotcloud-community-mqtt-backend:local init --output /runtime
 cat > "$test_runtime/override.yaml" <<YAML
 services:
   mosquitto:

@@ -28,17 +28,17 @@ func decode(r *http.Request, v interface{}) error {
 	d := json.NewDecoder(r.Body)
 	d.DisallowUnknownFields()
 	if err := d.Decode(v); err != nil {
-		return errors.New("请求格式错误")
+		return errors.New(messageText("e.2529b19bc41c"))
 	}
 	if err := d.Decode(new(interface{})); err != io.EOF {
-		return errors.New("请求格式错误")
+		return errors.New(messageText("e.2529b19bc41c"))
 	}
 	return nil
 }
 func method(w http.ResponseWriter, r *http.Request, expected string) bool {
 	if r.Method != expected {
 		w.Header().Set("Allow", expected)
-		jsonError(w, "方法不允许", 405)
+		jsonError(w, messageText("e.4f34574afee4"), 405)
 		return false
 	}
 	return true
@@ -55,7 +55,7 @@ func sameOrigin(w http.ResponseWriter, r *http.Request) bool {
 	}
 	valid = valid || allowedFrontend(origin)
 	if !valid {
-		jsonError(w, "请求来源不允许", 403)
+		jsonError(w, messageText("e.2f31aac81862"), 403)
 	}
 	return valid
 }
@@ -63,13 +63,13 @@ func userAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		token := requestSession(r)
 		if token == "" {
-			jsonError(w, "请先登录", 401)
+			jsonError(w, messageText("e.48144f96c150"), 401)
 			return
 		}
 		var user string
 		err := app.store.QueryRow("SELECT s.username FROM sessions s JOIN users u ON s.username=u.username WHERE s.token=? AND s.expires>? AND u.state='active'", digest(token), time.Now().Unix()).Scan(&user)
 		if err != nil {
-			jsonError(w, "会话已失效，请重新登录", 401)
+			jsonError(w, messageText("e.48c14e645b3b"), 401)
 			return
 		}
 		if r.Method != http.MethodGet && !sameOrigin(w, r) {
@@ -141,7 +141,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !allowAttempt(r, "login", 20, time.Minute) {
-		jsonError(w, "请求过于频繁", 429)
+		jsonError(w, messageText("e.9be2505cb51c"), 429)
 		return
 	}
 	var req loginReq
@@ -243,11 +243,11 @@ func handlePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.SetCookie(w, sessionCookie("", -1))
-	jsonResp(w, map[string]string{"message": "网站密码已修改，请重新登录；MQTT 密码保持不变"})
+	jsonResp(w, map[string]string{"message": messageText("e.9c0b05f1e23d")})
 }
 func (a *Application) changeMQTTPassword(user, password string) error {
 	if len(password) < 6 || len(password) > 256 {
-		return errors.New("密码长度须为 6–256 字节")
+		return errors.New(messageText("e.447af662b999"))
 	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -293,7 +293,7 @@ func (a *Application) changeMQTTPassword(user, password string) error {
 func adminAuth(next http.HandlerFunc) http.HandlerFunc {
 	return userAuth(func(w http.ResponseWriter, r *http.Request) {
 		if !app.store.isAdmin(currentUser(r)) {
-			jsonError(w, "没有管理权限", http.StatusForbidden)
+			jsonError(w, messageText("e.90343cedc288"), http.StatusForbidden)
 			return
 		}
 		next(w, r)
@@ -308,7 +308,7 @@ func operationError(w http.ResponseWriter, err error) {
 	case errors.Is(err, errConflict):
 		jsonError(w, err.Error(), 409)
 	case errors.Is(err, sql.ErrNoRows):
-		jsonError(w, "记录不存在", 404)
+		jsonError(w, messageText("e.e4ba03868d92"), 404)
 	case errors.Is(err, errCredentials):
 		jsonError(w, err.Error(), 401)
 	case errors.Is(err, errUnavailable):
@@ -316,9 +316,9 @@ func operationError(w http.ResponseWriter, err error) {
 	default:
 		var brokerErr *brokerFailure
 		if errors.As(err, &brokerErr) {
-			jsonError(w, "Broker 权限同步未完成，请稍后重试", 503)
+			jsonError(w, messageText("e.f0a422fd901c"), 503)
 		} else {
-			jsonError(w, "操作未完成，请检查服务日志", 500)
+			jsonError(w, messageText("e.5b81b37e66d1"), 500)
 		}
 	}
 }

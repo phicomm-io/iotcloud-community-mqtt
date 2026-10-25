@@ -23,7 +23,7 @@ func (s *Store) cleanVerificationHistory(now int64) error {
 	if _, err = tx.Exec("UPDATE verification_emails SET code='' WHERE expires_at>0 AND expires_at<=?", now); err != nil {
 		return err
 	}
-	if _, err = tx.Exec("UPDATE verification_emails SET status='unknown',code='',detail='发送过程可能被中断，无法确认邮件服务器是否接受；请重新获取验证码' WHERE status='sending' AND created_at<?", now-60); err != nil {
+	if _, err = tx.Exec("UPDATE verification_emails SET status='unknown',code='',detail=? WHERE status='sending' AND created_at<?", "verification.interrupted", now-60); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -41,7 +41,7 @@ func (s *Store) beginVerification(email, code string) (int64, error) {
 }
 func (s *Store) finishVerificationSend(id int64, email string, success bool) error {
 	if !success {
-		_, err := s.Exec("UPDATE verification_emails SET status='failed',code='',detail='邮件服务器发送失败，请检查 SMTP 日志' WHERE id=? AND status='sending'", id)
+		_, err := s.Exec("UPDATE verification_emails SET status='failed',code='',detail=? WHERE id=? AND status='sending'", "verification.delivery_failed", id)
 		return err
 	}
 	now := time.Now().Unix()
@@ -89,7 +89,7 @@ func (s *Store) consumeVerification(email, code string) (int64, error) {
 	return id, tx.Commit()
 }
 func (s *Store) finishVerificationRegistration(id int64, username string, success bool) error {
-	status, detail, registeredAt := "registration_failed", "验证码已通过，但注册失败；请重新获取验证码", int64(0)
+	status, detail, registeredAt := "registration_failed", "e.66ba1c71fe55", int64(0)
 	if success {
 		status, detail, registeredAt = "registered", "", time.Now().Unix()
 	}
@@ -109,6 +109,7 @@ type verificationEmail struct {
 	Status       string `json:"status"`
 	Code         string `json:"code,omitempty"`
 	Detail       string `json:"detail,omitempty"`
+	DetailKey    string `json:"detail_key,omitempty"`
 	RegisteredAt int64  `json:"registered_at"`
 	Username     string `json:"username,omitempty"`
 }
@@ -131,19 +132,19 @@ func handleVerificationEmails(w http.ResponseWriter, r *http.Request) {
 		page = 1
 	}
 	if page > 100000 {
-		jsonError(w, "页码超出范围", 400)
+		jsonError(w, messageText("e.2c5882fc7b7b"), 400)
 		return
 	}
 	email := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("email")))
 	if len(email) > 254 {
-		jsonError(w, "邮箱查询过长", 400)
+		jsonError(w, messageText("e.e8cbd0e96486"), 400)
 		return
 	}
 	status := r.URL.Query().Get("status")
 	switch status {
 	case "", "sent", "expired", "failed", "registered", "superseded", "sending", "unknown", "verified", "registration_failed":
 	default:
-		jsonError(w, "状态不正确", 400)
+		jsonError(w, messageText("e.3bb42a1e90f0"), 400)
 		return
 	}
 	since := now - int64(days)*86400
@@ -182,6 +183,9 @@ func handleVerificationEmails(w http.ResponseWriter, r *http.Request) {
 		if err = rows.Scan(&record.ID, &record.Email, &record.CreatedAt, &record.SentAt, &record.ExpiresAt, &record.Status, &record.Code, &record.Detail, &record.RegisteredAt, &record.Username); err != nil {
 			break
 		}
+		// Old databases contain the Chinese text; new records store the stable
+		// key. Both forms render in the request language without a DB rewrite.
+		record.Detail, record.DetailKey = localizedMessage(record.Detail, responseLanguage(w))
 		records = append(records, record)
 	}
 	if err == nil {

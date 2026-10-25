@@ -105,13 +105,13 @@ func sameBemfaDevice(a, b Device) bool {
 }
 func (r *BemfaRelay) validate(user string, c *BemfaConfig) error {
 	if c.Enabled && c.APIKey == "" {
-		return errors.New("请填写巴法云私钥")
+		return errors.New(messageText("e.7709ac19da8a"))
 	}
 	if c.APIKey != "" && !bemfaKey.MatchString(c.APIKey) {
-		return errors.New("巴法云私钥格式不正确")
+		return errors.New(messageText("e.0ce87282dfbb"))
 	}
 	if len(c.Mappings) > 64 {
-		return errors.New("最多添加 64 个主题映射")
+		return errors.New(messageText("e.11f74b9c9966"))
 	}
 	devices, err := r.app.store.devices(user)
 	if err != nil {
@@ -130,7 +130,7 @@ func (r *BemfaRelay) validate(user string, c *BemfaConfig) error {
 			}
 		}
 		if !found {
-			return errors.New("只能映射当前账号下已就绪的 TMCP TC1/A1 设备")
+			return errors.New(messageText("e.769090dbbb54"))
 		}
 		suffix := "001"
 		if m.Device.Model == "a1" {
@@ -140,17 +140,17 @@ func (r *BemfaRelay) validate(user string, c *BemfaConfig) error {
 			}
 		}
 		if m.Channel < 0 || (m.Device.Model == "tc1" && m.Channel > 5) || (m.Device.Model == "a1" && m.Channel > 1) || !bemfaTopic.MatchString(m.Topic) || !strings.HasSuffix(m.Topic, suffix) {
-			return errors.New("通道或主题格式不正确：插座 001、风扇 003、灯 002")
+			return errors.New(messageText("e.d2ed1e828e67"))
 		}
 		key := bemfaBase(m.Device) + "/" + string(rune('0'+m.Channel))
 		if topics[m.Topic] || channels[key] {
-			return errors.New("主题及设备通道不能重复映射")
+			return errors.New(messageText("e.cba6e923c026"))
 		}
 		topics[m.Topic] = true
 		channels[key] = true
 	}
 	if c.Enabled && len(c.Mappings) == 0 {
-		return errors.New("请至少添加一个主题映射")
+		return errors.New(messageText("e.fc5807a70e5d"))
 	}
 	// A private key is also the MQTT client ID: sharing it across platform accounts
 	// would disconnect the other account. Store only its digest for uniqueness.
@@ -158,7 +158,7 @@ func (r *BemfaRelay) validate(user string, c *BemfaConfig) error {
 		var owner string
 		err = r.app.store.QueryRow("SELECT username FROM bemfa_integrations WHERE key_hash=? AND username<>?", digest(c.APIKey), user).Scan(&owner)
 		if err == nil {
-			return errors.New("该巴法云私钥已被其他账号使用")
+			return errors.New(messageText("e.f513aea04248"))
 		}
 		if !errors.Is(err, sql.ErrNoRows) {
 			return err
@@ -169,7 +169,7 @@ func (r *BemfaRelay) validate(user string, c *BemfaConfig) error {
 func handleBemfa(w http.ResponseWriter, req *http.Request) {
 	r := app.bemfa
 	if r == nil {
-		jsonError(w, "当前节点未启用巴法云接入", 503)
+		jsonError(w, messageText("e.449a12016770"), 503)
 		return
 	}
 	user := currentUser(req)
@@ -178,7 +178,7 @@ func handleBemfa(w http.ResponseWriter, req *http.Request) {
 		_, err := app.store.Exec("DELETE FROM bemfa_integrations WHERE username=?", user)
 		app.mu.Unlock()
 		if err != nil {
-			jsonError(w, "清除失败", 500)
+			jsonError(w, messageText("e.2952f4853185"), 500)
 			return
 		}
 		r.reload()
@@ -186,14 +186,14 @@ func handleBemfa(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	if req.Method != http.MethodGet && req.Method != http.MethodPut {
-		jsonError(w, "方法不允许", 405)
+		jsonError(w, messageText("e.4f34574afee4"), 405)
 		return
 	}
 	app.mu.Lock()
 	c, err := r.readConfig(user)
 	if err != nil {
 		app.mu.Unlock()
-		jsonError(w, "读取巴法云配置失败，请检查节点密钥", 500)
+		jsonError(w, messageText("e.9a8c13083c68"), 500)
 		return
 	}
 	if req.Method == http.MethodPut {
@@ -235,7 +235,7 @@ func handleBemfa(w http.ResponseWriter, req *http.Request) {
 		}
 		if err != nil {
 			app.mu.Unlock()
-			jsonError(w, "保存巴法云配置失败", 500)
+			jsonError(w, messageText("e.06b2307f3506"), 500)
 			return
 		}
 		c = next

@@ -78,6 +78,57 @@ func TestVerificationDurableLifecycle(t *testing.T) {
 		t.Fatal("latest lost")
 	}
 }
+
+func TestVerificationHistoryLanguagesAndLegacyDetails(t *testing.T) {
+	oldApp := app
+	t.Cleanup(func() { app = oldApp })
+	app = testApp(t)
+	fresh, err := app.store.beginVerification("fresh@example.com", "123456")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = app.store.finishVerificationSend(fresh, "fresh@example.com", false); err != nil {
+		t.Fatal(err)
+	}
+	legacy, err := app.store.beginVerification("legacy@example.com", "654321")
+	if err != nil {
+		t.Fatal(err)
+	}
+	legacyDetail := messageText("verification.interrupted")
+	if _, err = app.store.Exec("UPDATE verification_emails SET status='unknown',code='',detail=? WHERE id=?", legacyDetail, legacy); err != nil {
+		t.Fatal(err)
+	}
+	for _, language := range []string{"en", "zh-CN"} {
+		recorder := httptest.NewRecorder()
+		recorder.Header().Set("Content-Language", language)
+		handleVerificationEmails(recorder, httptest.NewRequest("GET", "/api/admin/verification-emails", nil))
+		var data struct {
+			Records []verificationEmail `json:"records"`
+		}
+		if err := json.Unmarshal(recorder.Body.Bytes(), &data); err != nil {
+			t.Fatal(err)
+		}
+		if recorder.Code != 200 || len(data.Records) != 2 {
+			t.Fatal(recorder.Code, recorder.Body)
+		}
+		for _, record := range data.Records {
+			key := "verification.delivery_failed"
+			if record.ID == legacy {
+				key = "verification.interrupted"
+			}
+			if record.DetailKey != key || record.Detail != messageForLanguage(key, language) || record.Code != "" {
+				t.Fatalf("%s: %+v", language, record)
+			}
+		}
+	}
+	for id, want := range map[int64]string{fresh: "verification.delivery_failed", legacy: legacyDetail} {
+		var stored string
+		if err := app.store.QueryRow("SELECT detail FROM verification_emails WHERE id=?", id).Scan(&stored); err != nil || stored != want {
+			t.Fatalf("read mutated detail %d: %q (%v)", id, stored, err)
+		}
+	}
+}
+
 func TestVerificationHTTPAndAdminRecords(t *testing.T) {
 	oldCfg, oldApp, oldSend := cfg, app, deliverVerificationEmail
 	t.Cleanup(func() { cfg, app, deliverVerificationEmail = oldCfg, oldApp, oldSend })
@@ -91,12 +142,19 @@ func TestVerificationHTTPAndAdminRecords(t *testing.T) {
 	call := func(path, body string) *httptest.ResponseRecorder {
 		r := httptest.NewRequest("POST", cfg.PublicURL+path, strings.NewReader(body))
 		r.Header.Set("Origin", cfg.PublicURL)
+		r.Header.Set("Accept-Language", "en-US,en;q=0.9,zh-CN;q=0.5")
 		w := httptest.NewRecorder()
 		routes().ServeHTTP(w, r)
 		return w
 	}
 	var delivered string
-	deliverVerificationEmail = func(to, code string) error { delivered = code; return nil }
+	deliverVerificationEmail = func(to, code, language string) error {
+		if language != "en" {
+			t.Fatalf("email language = %q", language)
+		}
+		delivered = code
+		return nil
+	}
 	if w := call("/api/register/verify", `{"email":"New@Example.com"}`); w.Code != 200 || strings.Contains(w.Body.String(), delivered) {
 		t.Fatal(w.Code, w.Body)
 	}
@@ -107,7 +165,7 @@ func TestVerificationHTTPAndAdminRecords(t *testing.T) {
 	if w := call("/api/register", body); w.Code != 400 {
 		t.Fatal("replay", w.Code, w.Body)
 	}
-	deliverVerificationEmail = func(to, code string) error { return errors.New("private smtp detail") }
+	deliverVerificationEmail = func(to, code, language string) error { return errors.New("private smtp detail") }
 	if w := call("/api/register/verify", `{"email":"fail@example.com"}`); w.Code != 503 {
 		t.Fatal(w.Code, w.Body)
 	}
