@@ -41,9 +41,12 @@ func deviceRole(d Device) string {
 func scopeRules(d Device) []Rule {
 	topic := "phicomm/v2/" + userKey(topicUsername(d)) + "/" + d.Model + "/" + d.MAC + "/#"
 	rules := []Rule{{"publishClientSend", topic, true, 1}, {"publishClientReceive", topic, true, 1}, {"subscribePattern", topic, true, 1}}
-	if d.Model == "m1" || d.Model == "daikin" {
+	if d.Model == "tc1" || d.Model == "a1" || d.Model == "m1" || d.Model == "daikin" {
 		base := "phicomm/v2/" + userKey(topicUsername(d)) + "/sensor/" + d.MAC
-		rules = append(rules, Rule{"publishClientSend", base + "/state", true, 1}, Rule{"publishClientReceive", base + "/command", true, 1}, Rule{"subscribeLiteral", base + "/command", true, 1})
+		rules = append(rules, Rule{"publishClientSend", base + "/state", true, 1})
+		if d.Model == "m1" || d.Model == "daikin" {
+			rules = append(rules, Rule{"publishClientReceive", base + "/command", true, 1}, Rule{"subscribeLiteral", base + "/command", true, 1})
+		}
 	}
 	return rules
 }
@@ -74,9 +77,27 @@ func (a *Application) accountRules(username string) ([]Rule, error) {
 		return nil, err
 	}
 	linked := map[string]bool{}
+	sensorReaders := map[string]bool{}
+	hasM1 := false
 	for _, d := range devices {
-		if d.Model == "a1" && (d.Status == "active" || d.Status == "pending") {
-			linked[userKey(topicUsername(d))] = true
+		if d.Status != "active" && d.Status != "pending" {
+			continue
+		}
+		if d.Model == "a1" {
+			key := userKey(topicUsername(d))
+			linked[key] = true
+			sensorReaders[key] = true
+		}
+		hasM1 = hasM1 || d.Model == "m1"
+	}
+	if hasM1 {
+		for _, principal := range principals {
+			key := userKey(principal)
+			sensorReaders[key] = true
+			// M1 uses this fixed filter for display-source availability. A SUBACK
+			// grants no receive permission: registered device roles still gate
+			// every availability message, including retained messages.
+			rules = append(rules, Rule{"subscribeLiteral", "phicomm/v2/" + key + "/+/+/availability", true, 1})
 		}
 	}
 	for _, d := range devices {
@@ -84,9 +105,12 @@ func (a *Application) accountRules(username string) ([]Rule, error) {
 			rules = append(rules, Rule{"publishClientSend", "phicomm/v2/" + userKey(topicUsername(d)) + "/address/" + d.MAC, true, 1})
 		}
 	}
-	for key := range linked {
+	for key := range sensorReaders {
 		base := "phicomm/v2/" + key + "/sensor/"
-		rules = append(rules, Rule{"publishClientReceive", base + "+/state", true, 1}, Rule{"subscribePattern", base + "+/state", true, 1}, Rule{"publishClientSend", base + "+/command", true, 1})
+		rules = append(rules, Rule{"publishClientReceive", base + "+/state", true, 1}, Rule{"subscribePattern", base + "+/state", true, 1})
+	}
+	for key := range linked {
+		rules = append(rules, Rule{"publishClientSend", "phicomm/v2/" + key + "/sensor/+/command", true, 1})
 		for _, kind := range []string{"publishClientReceive", "subscribePattern"} {
 			rules = append(rules, Rule{kind, "phicomm/v2/" + key + "/address/+", true, 1})
 		}
