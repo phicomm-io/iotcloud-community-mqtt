@@ -11,7 +11,7 @@ import (
 )
 
 func TestDiscoveryRefreshesExistingSensorACL(t *testing.T) {
-	for _, model := range []string{"m1", "daikin"} {
+	for _, model := range []string{"tc1", "a1", "m1", "daikin"} {
 		t.Run(model, func(t *testing.T) {
 			a := testApp(t)
 			b := a.broker.(*fakeBroker)
@@ -84,7 +84,7 @@ func TestManualTMCPRegistrationAndRestore(t *testing.T) {
 						t.Fatal("incorrect device role assignment", b.attached)
 					}
 					want := "phicomm/v2/" + userKey("alice") + "/" + model + "/" + mac + "/#"
-					expected := 3
+					expected := 4
 					if model == "m1" || model == "daikin" {
 						expected = 6
 					}
