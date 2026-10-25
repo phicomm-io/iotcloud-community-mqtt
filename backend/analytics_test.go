@@ -43,6 +43,10 @@ func TestAnalyticsCollectionAndAdminBoundary(t *testing.T) {
 			t.Fatal(w.Code, w.Body.String())
 		}
 	}
+	daikin := strings.Replace(strings.Replace(payload, `"event":"pageview"`, `"event":"device_view"`, 1), `"model":""`, `"model":"daikin"`, 1)
+	if w := request("POST", "/api/analytics/event", daikin, cfg.PublicURL, nil); w.Code != 204 {
+		t.Fatal("supported Daikin model rejected", w.Code, w.Body.String())
+	}
 	login := request("POST", "/api/auth/login", `{"username":"alice","password":"secret123"}`, cfg.PublicURL, nil)
 	if login.Code != 200 {
 		t.Fatal(login.Code, login.Body.String())

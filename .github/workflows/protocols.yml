@@ -1,0 +1,12 @@
+name: Check shared protocol contracts
+on:
+  push:
+    branches: [main, dev, 'feature/**', 'hotfix/**']
+  pull_request:
+    branches: [main, dev]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contracts:
+    uses: phicomm-io/iotcloud-community-protocols/.github/workflows/validate-consumer.yml@ad03c8a6890c0a4af7aa6d5988b4c6d0d721260a

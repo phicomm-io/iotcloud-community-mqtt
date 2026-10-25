@@ -27,7 +27,7 @@ func handleDevices(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if d.Username != "" || d.Status != "" || (d.Namespace != "" || d.MQTTUsername != "") {
-			jsonError(w, "不能指定设备归属或状态", 400)
+			jsonError(w, messageText("e.6c2899d8f501"), 400)
 			return
 		}
 		if err := validateDevice(&d); err != nil {
@@ -38,9 +38,9 @@ func handleDevices(w http.ResponseWriter, r *http.Request) {
 			operationError(w, err)
 			return
 		}
-		jsonResp(w, map[string]string{"message": "设备已添加"})
+		jsonResp(w, map[string]string{"message": messageText("e.f7bb1748ec1e")})
 	default:
-		jsonError(w, "方法不允许", 405)
+		jsonError(w, messageText("e.4f34574afee4"), 405)
 	}
 }
 func handleDevice(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +50,7 @@ func handleDevice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !isValidMAC(mac) {
-		jsonError(w, "MAC 地址格式不正确", 400)
+		jsonError(w, messageText("e.d87efef93be5"), 400)
 		return
 	}
 	mac = normalizeMAC(mac)
@@ -62,7 +62,7 @@ func handleDevice(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if d.MAC != "" && normalizeMAC(d.MAC) != mac || d.Username != "" || d.Status != "" || (d.Namespace != "" || d.MQTTUsername != "") {
-			jsonError(w, "不能修改 MAC、归属或状态", 400)
+			jsonError(w, messageText("e.449ee80d2263"), 400)
 			return
 		}
 		d.MAC = mac
@@ -74,14 +74,14 @@ func handleDevice(w http.ResponseWriter, r *http.Request) {
 			operationError(w, err)
 			return
 		}
-		jsonResp(w, map[string]string{"message": "设备已更新"})
+		jsonResp(w, map[string]string{"message": messageText("e.0a7684920170")})
 	case "DELETE":
 		if err := app.removeDevice(currentUser(r), mac); err != nil {
 			operationError(w, err)
 			return
 		}
-		jsonResp(w, map[string]string{"message": "设备已解绑"})
+		jsonResp(w, map[string]string{"message": messageText("e.507b4da76f2f")})
 	default:
-		jsonError(w, "方法不允许", 405)
+		jsonError(w, messageText("e.4f34574afee4"), 405)
 	}
 }

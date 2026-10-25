@@ -10,6 +10,8 @@ import (
 )
 
 func TestUnifiedAdminAuthorization(t *testing.T) {
+	previousCfg, previousApp := cfg, app
+	t.Cleanup(func() { cfg = previousCfg; app = previousApp })
 	app = testApp(t)
 	cfg.AdminUsername = "admin"
 	cfg.PublicURL = "http://example.test"
@@ -83,6 +85,8 @@ func TestUnifiedAdminAuthorization(t *testing.T) {
 	}
 }
 func TestAdminBootstrapOnceAndNoPrivilegeAdoption(t *testing.T) {
+	previousCfg, previousApp := cfg, app
+	t.Cleanup(func() { cfg = previousCfg; app = previousApp })
 	app = testApp(t)
 	cfg.AdminUsername = "admin"
 	cfg.BrokerAdminUsername = serviceUser

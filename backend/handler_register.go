@@ -19,14 +19,11 @@ func reservedUser(u string) bool {
 	return u == cfg.BrokerAdminUsername || strings.HasPrefix(u, "__")
 }
 func validateAccount(user, password string) error {
-	if !usernameRegex.MatchString(user) || reservedUser(user) || user == cfg.AdminUsername {
-		return errors.New("用户名格式不正确或为保留账号")
-	}
-	if !emailRegex.MatchString(user) && len(user) > 32 {
-		return errors.New("用户名长度须为 3–32 个字符")
+	if err := validateUsername(user); err != nil {
+		return err
 	}
 	if len(password) < 6 || len(password) > 256 {
-		return errors.New("密码长度须为 6–256 字节")
+		return errors.New(messageText("e.447af662b999"))
 	}
 	return nil
 }
@@ -38,6 +35,9 @@ func (a *Application) register(user, password string) error {
 
 // registerLocked shares the account mutation lock with OAuth completion.
 func (a *Application) registerLocked(user, password string) error {
+	if err := validateAccount(user, password); err != nil {
+		return err
+	}
 	state, err := a.store.state(user)
 	if err == nil {
 		if state == "pending" {
@@ -115,14 +115,14 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !allowAttempt(r, "register", 10, time.Minute) {
-		jsonError(w, "请求过于频繁", 429)
+		jsonError(w, messageText("e.9be2505cb51c"), 429)
 		return
 	}
 	cfgMu.RLock()
 	level := cfg.RegisterLevel
 	cfgMu.RUnlock()
 	if level == 0 {
-		jsonError(w, "注册功能已关闭", 403)
+		jsonError(w, messageText("e.fb3a60f71b0b"), 403)
 		return
 	}
 	var req RegisterReq
@@ -132,10 +132,6 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 	req.Username = strings.TrimSpace(req.Username)
 	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
-	if err := validateUsername(req.Username); err != nil {
-		jsonError(w, err.Error(), 400)
-		return
-	}
 	if err := validateAccount(req.Username, req.Password); err != nil {
 		jsonError(w, err.Error(), 400)
 		return
@@ -143,7 +139,7 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 	var verificationID int64
 	if level == 2 {
 		if !emailRegex.MatchString(req.Email) || len(req.Email) > 254 {
-			jsonError(w, "邮箱验证码错误或已过期", 400)
+			jsonError(w, messageText("e.132431225954"), 400)
 			return
 		}
 		var err error
@@ -153,7 +149,7 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if verificationID == 0 {
-			jsonError(w, "邮箱验证码错误或已过期", 400)
+			jsonError(w, messageText("e.132431225954"), 400)
 			return
 		}
 	}
@@ -168,7 +164,7 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 		operationError(w, registrationErr)
 		return
 	}
-	jsonResp(w, map[string]string{"message": "注册成功，请登录后添加设备", "username": req.Username})
+	jsonResp(w, map[string]string{"message": messageText("e.0bf253bee02b"), "username": req.Username})
 }
 func handleVerifyEmail(w http.ResponseWriter, r *http.Request) {
 	if !method(w, r, "POST") || !sameOrigin(w, r) {
@@ -178,7 +174,7 @@ func handleVerifyEmail(w http.ResponseWriter, r *http.Request) {
 	level := cfg.RegisterLevel
 	cfgMu.RUnlock()
 	if level != 2 {
-		jsonError(w, "当前注册模式不需要邮箱验证", 400)
+		jsonError(w, messageText("e.815349ee7216"), 400)
 		return
 	}
 	var req struct {
@@ -190,11 +186,11 @@ func handleVerifyEmail(w http.ResponseWriter, r *http.Request) {
 	}
 	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
 	if !emailRegex.MatchString(req.Email) || len(req.Email) > 254 {
-		jsonError(w, "邮箱格式不正确", 400)
+		jsonError(w, messageText("e.4e992d96f947"), 400)
 		return
 	}
 	if !allowAttempt(r, "verify", 5, time.Minute) || !allowAttempt(r, "email:"+req.Email, 1, time.Minute) {
-		jsonError(w, "请求过于频繁", 429)
+		jsonError(w, messageText("e.9be2505cb51c"), 429)
 		return
 	}
 	code, err := genCode()
@@ -207,14 +203,14 @@ func handleVerifyEmail(w http.ResponseWriter, r *http.Request) {
 		operationError(w, err)
 		return
 	}
-	sendErr := deliverVerificationEmail(req.Email, code)
+	sendErr := deliverVerificationEmail(req.Email, code, preferredLanguage(r.Header.Get("Accept-Language")))
 	if err = app.store.finishVerificationSend(id, req.Email, sendErr == nil); err != nil {
 		operationError(w, err)
 		return
 	}
 	if sendErr != nil {
-		jsonError(w, "邮件发送失败，请稍后重试", 503)
+		jsonError(w, messageText("e.a2bec2867f2e"), 503)
 		return
 	}
-	jsonResp(w, map[string]string{"message": "验证码已发送，5 分钟内有效"})
+	jsonResp(w, map[string]string{"message": messageText("e.aa3f3413dfdd")})
 }

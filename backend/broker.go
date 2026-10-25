@@ -17,8 +17,8 @@ import (
 	"time"
 )
 
-var errUnavailable = errors.New("Broker 不可用，操作待同步，请稍后重试")
-var errCredentials = errors.New("用户名或密码错误")
+var errUnavailable = errors.New(messageText("e.74bb6ba74027"))
+var errCredentials = errors.New(messageText("e.a9a6a83a7d22"))
 
 type brokerReply struct {
 	Command     string          `json:"command"`

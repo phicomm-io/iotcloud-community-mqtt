@@ -1,0 +1,20 @@
+name: Check branch and release policy
+on:
+  pull_request:
+    branches: [main, dev]
+  push:
+    branches: [main, dev, 'feature/**', 'hotfix/**']
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  policy:
+    name: Branch and release policy
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: python3 tools/check_branch_policy.py
+      - run: python3 -m unittest discover -s tools -p 'test_*.py' -v

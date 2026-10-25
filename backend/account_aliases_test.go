@@ -13,9 +13,7 @@ import (
 func TestAccountAliasesShareCredentialsRolesAndDeviceOwner(t *testing.T) {
 	a := testApp(t)
 	const email = "legacy@example.com"
-	if err := a.register(email, "secret123"); err != nil {
-		t.Fatal(err)
-	}
+	seedLegacyAccount(t, a, email, "secret123")
 	if err := a.addMQTTAlias(email, "short_name", "incorrect"); !errors.Is(err, errCredentials) {
 		t.Fatal(err)
 	}
@@ -126,8 +124,8 @@ func TestEmailRegistrationRequiresShortUsernameAndSeparatesEmail(t *testing.T) {
 	if w.Code != 200 || data["username"] != "new_user" || data["mqtt_username"] != "new_user" {
 		t.Fatal(w.Code, data)
 	}
-	if err = app.register("new@example.com", "secret123"); err != errAccountName {
-		t.Fatal("email login alias collision", err)
+	if err = app.register("new@example.com", "secret123"); err != errInvalidUsername {
+		t.Fatal("email login alias cannot become a new MQTT principal", err)
 	}
 }
 

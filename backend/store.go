@@ -41,7 +41,7 @@ type Device struct {
 
 func validateDevice(d *Device) error {
 	if !isValidMAC(d.MAC) {
-		return errors.New("MAC 地址格式不正确")
+		return errors.New(messageText("e.d87efef93be5"))
 	}
 	d.MAC = normalizeMAC(d.MAC)
 	if d.Model == "" {
@@ -53,17 +53,17 @@ func validateDevice(d *Device) error {
 			d.Version = "v2"
 		}
 		if d.Version != "v1" && d.Version != "v2" {
-			return errors.New("TC1 协议必须为 v1/v2")
+			return errors.New(messageText("e.150d651d5679"))
 		}
 	case "m1", "a1", "daikin":
 		if d.Version == "" {
 			d.Version = "v2"
 		}
 		if d.Version != "v2" {
-			return errors.New("传感器与净化器仅支持 TMCP")
+			return errors.New(messageText("e.5c1e0d5e1217"))
 		}
 	default:
-		return errors.New("设备型号不支持")
+		return errors.New(messageText("e.657f8459718b"))
 	}
 	return nil
 }
@@ -185,7 +185,7 @@ func (a *Application) syncDevice(d Device) error {
 }
 func (a *Application) saveDevice(username string, d Device, update bool) error {
 	if d.Namespace != "" || d.MQTTUsername != "" {
-		return errors.New("账号主题只能通过 MQTT 声明自动发现")
+		return errors.New(messageText("e.8f87e412bb4f"))
 	}
 	if err := validateDevice(&d); err != nil {
 		return err
@@ -202,7 +202,7 @@ func (a *Application) saveDevice(username string, d Device, update bool) error {
 			return sql.ErrNoRows
 		}
 		if existing.Status == "deleting" {
-			return errors.New("设备正在解绑，请稍后重试")
+			return errors.New(messageText("e.a8d0239a72c3"))
 		}
 		_, err = a.store.Exec("UPDATE devices SET model=?,version=?,status='pending' WHERE mac=?", d.Model, d.Version, d.MAC)
 	} else {
@@ -225,7 +225,7 @@ func (a *Application) saveDevice(username string, d Device, update bool) error {
 	return a.syncDevice(d)
 }
 
-var errConflict = errors.New("该 MAC 或账号已被绑定")
+var errConflict = errors.New(messageText("e.4c193cda5dd8"))
 
 func (a *Application) removeDevice(username, mac string) error {
 	a.mu.Lock()

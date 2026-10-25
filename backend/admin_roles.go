@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-var errLastAdmin = errors.New("不能删除或降级最后一个管理员")
+var errLastAdmin = errors.New(messageText("e.15d0e272cae1"))
 
 func (s *Store) isAdmin(user string) bool {
 	var count int
@@ -42,7 +42,7 @@ func (a *Application) bootstrapAdmin() error {
 		return err
 	}
 	user := cfg.AdminUsername
-	if !usernameRegex.MatchString(user) || reservedUser(user) {
+	if !shortUsernameRegex.MatchString(user) || reservedUser(user) {
 		return errors.New("invalid bootstrap admin username")
 	}
 	state, err := a.store.state(user)
@@ -113,14 +113,14 @@ func handleUserRole(w http.ResponseWriter, r *http.Request, user string) {
 		return
 	}
 	if req.Role != "admin" && req.Role != "user" {
-		jsonError(w, "角色必须为 admin 或 user", 400)
+		jsonError(w, messageText("e.3dc876c8ff1e"), 400)
 		return
 	}
 	app.mu.Lock()
 	defer app.mu.Unlock()
 	state, err := app.store.state(user)
 	if err != nil || state != "active" {
-		jsonError(w, "有效账号不存在", 404)
+		jsonError(w, messageText("e.a2a9d4e096e5"), 404)
 		return
 	}
 	if req.Role == "user" {

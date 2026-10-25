@@ -1,0 +1,26 @@
+name: Bug report / 问题反馈
+description: Report a reproducible platform, account, MQTT or WebUI problem.
+body:
+  - type: input
+    id: versions
+    attributes:
+      label: Versions / 版本
+      description: Platform and frontend release/commit; device firmware and M1 MCU versions when relevant.
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Component and device / 组件与设备
+      description: Backend, account, MQTT broker, WebUI or deployment; include device model/variant when relevant.
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps, expected and actual behavior / 步骤、预期与实际结果
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence / 证据
+      description: Redacted logs, transport, browser and upgrade path. Remove passwords, tokens and personal data.

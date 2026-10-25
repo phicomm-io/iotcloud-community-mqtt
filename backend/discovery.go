@@ -317,7 +317,7 @@ func (a *Application) registerScopedDevice(d Device, restoreHidden bool) error {
 }
 func handleScopedDevice(w http.ResponseWriter, r *http.Request, mac string) {
 	if !isValidMAC(mac) {
-		jsonError(w, "MAC 地址格式不正确", 400)
+		jsonError(w, messageText("e.d87efef93be5"), 400)
 		return
 	}
 	mac = normalizeMAC(mac)
@@ -342,13 +342,13 @@ func handleScopedDeviceFor(w http.ResponseWriter, r *http.Request, mac, u string
 		_, err = app.store.Exec("UPDATE scoped_devices SET status='deleting' WHERE username=? AND mqtt_username=? AND mac=?", u, principal, mac)
 	case "PUT":
 		if d.Status != "hidden" {
-			jsonError(w, "自动发现设备型号由固件声明，不能手动修改", 400)
+			jsonError(w, messageText("e.69ffa0add155"), 400)
 			return
 		}
 		d.Status = "pending"
 		_, err = app.store.Exec("UPDATE scoped_devices SET status='pending' WHERE username=? AND mqtt_username=? AND mac=?", u, principal, mac)
 	default:
-		jsonError(w, "方法不允许", 405)
+		jsonError(w, messageText("e.4f34574afee4"), 405)
 		return
 	}
 	if err == nil {
@@ -358,5 +358,5 @@ func handleScopedDeviceFor(w http.ResponseWriter, r *http.Request, mac, u string
 		operationError(w, err)
 		return
 	}
-	jsonResp(w, map[string]string{"message": "设备已更新"})
+	jsonResp(w, map[string]string{"message": messageText("e.0a7684920170")})
 }

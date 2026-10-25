@@ -1,0 +1,18 @@
+name: Feature or compatibility request / 功能与兼容性建议
+description: Explain a user need or an interface/configuration change.
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: Problem and desired behavior / 问题与目标
+    validations:
+      required: true
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Devices, interfaces and stored settings / 设备、接口与配置影响
+      description: Describe old/new clients, migration, downgrade and language requirements.
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance / 验收方式
