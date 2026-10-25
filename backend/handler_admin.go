@@ -38,10 +38,6 @@ func handleUsers(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		req.Username = strings.TrimSpace(req.Username)
-		if err := validateUsername(req.Username); err != nil {
-			jsonError(w, err.Error(), 400)
-			return
-		}
 		if err := validateAccount(req.Username, req.Password); err != nil {
 			jsonError(w, err.Error(), 400)
 			return
@@ -50,9 +46,9 @@ func handleUsers(w http.ResponseWriter, r *http.Request) {
 			operationError(w, err)
 			return
 		}
-		jsonResp(w, map[string]string{"message": "用户已创建"})
+		jsonResp(w, map[string]string{"message": messageText("e.d4f7d0bf6262")})
 	default:
-		jsonError(w, "方法不允许", 405)
+		jsonError(w, messageText("e.4f34574afee4"), 405)
 	}
 }
 func handleUserOps(w http.ResponseWriter, r *http.Request) {
@@ -62,7 +58,7 @@ func handleUserOps(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if reservedUser(u) {
-		jsonError(w, "不能操作保留账号", 403)
+		jsonError(w, messageText("e.d3d0c2c1c246"), 403)
 		return
 	}
 	switch r.Method {
@@ -80,7 +76,7 @@ func handleUserOps(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if len(req.Password) < 6 || len(req.Password) > 256 {
-			jsonError(w, "密码长度须为 6–256 字节", 400)
+			jsonError(w, messageText("e.447af662b999"), 400)
 			return
 		}
 		if err := app.changePassword(u, req.Password); err != nil {
@@ -88,7 +84,7 @@ func handleUserOps(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	default:
-		jsonError(w, "方法不允许", 405)
+		jsonError(w, messageText("e.4f34574afee4"), 405)
 		return
 	}
 	jsonResp(w, map[string]bool{"ok": true})
@@ -109,7 +105,7 @@ func handleAdminDevices(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if d.Username == "" || reservedUser(d.Username) || d.Status != "" || (d.Namespace != "" || d.MQTTUsername != "") {
-			jsonError(w, "请选择有效账号", 400)
+			jsonError(w, messageText("e.6d97c2d92199"), 400)
 			return
 		}
 		if err := validateDevice(&d); err != nil {
@@ -122,7 +118,7 @@ func handleAdminDevices(w http.ResponseWriter, r *http.Request) {
 		}
 		jsonResp(w, map[string]bool{"ok": true})
 	default:
-		jsonError(w, "方法不允许", 405)
+		jsonError(w, messageText("e.4f34574afee4"), 405)
 	}
 }
 func handleAdminDevice(w http.ResponseWriter, r *http.Request) {
@@ -133,14 +129,14 @@ func handleAdminDevice(w http.ResponseWriter, r *http.Request) {
 	if strings.HasPrefix(mac, "scoped/") {
 		mac = strings.TrimPrefix(mac, "scoped/")
 		if !isValidMAC(mac) || reservedUser(r.URL.Query().Get("username")) {
-			jsonError(w, "设备标识不正确", 400)
+			jsonError(w, messageText("e.ff5b91812add"), 400)
 			return
 		}
 		handleScopedDeviceFor(w, r, normalizeMAC(mac), r.URL.Query().Get("username"))
 		return
 	}
 	if !isValidMAC(mac) {
-		jsonError(w, "MAC 地址格式不正确", 400)
+		jsonError(w, messageText("e.d87efef93be5"), 400)
 		return
 	}
 	mac = normalizeMAC(mac)
@@ -193,7 +189,7 @@ func handleConfig(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if req.RegisterLevel < 0 || req.RegisterLevel > 2 || len(req.ContactInfo) > 2000 {
-			jsonError(w, "配置格式错误", 400)
+			jsonError(w, messageText("e.478b671121de"), 400)
 			return
 		}
 		tx, err := app.store.Begin()
@@ -218,6 +214,6 @@ func handleConfig(w http.ResponseWriter, r *http.Request) {
 		cfgMu.Unlock()
 		jsonResp(w, map[string]bool{"ok": true})
 	default:
-		jsonError(w, "方法不允许", 405)
+		jsonError(w, messageText("e.4f34574afee4"), 405)
 	}
 }

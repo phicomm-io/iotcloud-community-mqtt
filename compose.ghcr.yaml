@@ -1,8 +1,8 @@
 # Use with docker-compose.yaml. Existing runtime/configuration mounts are retained.
 services:
   setup:
-    image: ghcr.io/phicomm-io/phicomm-community-mqtt-backend:${IMAGE_TAG:-latest}
+    image: ghcr.io/phicomm-io/iotcloud-community-mqtt-backend:${IMAGE_TAG:-latest}
   backend:
-    image: ghcr.io/phicomm-io/phicomm-community-mqtt-backend:${IMAGE_TAG:-latest}
+    image: ghcr.io/phicomm-io/iotcloud-community-mqtt-backend:${IMAGE_TAG:-latest}
   nginx:
-    image: ghcr.io/phicomm-io/phicomm-community-mqtt-web:${IMAGE_TAG:-latest}
+    image: ghcr.io/phicomm-io/iotcloud-community-mqtt-web:${IMAGE_TAG:-latest}

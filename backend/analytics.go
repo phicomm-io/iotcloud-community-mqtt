@@ -28,7 +28,7 @@ type metricRow struct {
 }
 
 func analyticsAgent(ua string) (string, string) {
-	browser, os := "其他", "其他"
+	browser, os := messageText("e.d2909f1647e7"), messageText("e.d2909f1647e7")
 	switch {
 	case strings.Contains(ua, "Edg/"):
 		browser = "Edge"
@@ -58,31 +58,31 @@ func handleAnalyticsEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !allowAttempt(r, "analytics", 120, time.Minute) {
-		jsonError(w, "请求过于频繁", 429)
+		jsonError(w, messageText("e.9be2505cb51c"), 429)
 		return
 	}
 	var e analyticsEvent
 	if decode(r, &e) != nil || !analyticsID.MatchString(e.Visitor) || !analyticsID.MatchString(e.Session) || !analyticsEvents[e.Event] || !analyticsPages[e.Page] {
-		jsonError(w, "统计事件格式错误", 400)
+		jsonError(w, messageText("e.2ea3a69ca256"), 400)
 		return
 	}
-	if e.Model != "" && e.Model != "tc1" && e.Model != "m1" && e.Model != "a1" {
-		jsonError(w, "设备型号不支持", 400)
+	if e.Model != "" && e.Model != "tc1" && e.Model != "m1" && e.Model != "a1" && e.Model != "daikin" {
+		jsonError(w, messageText("e.657f8459718b"), 400)
 		return
 	}
 	if (e.Event == "device_view") != (e.Model != "") {
-		jsonError(w, "统计型号与事件不匹配", 400)
+		jsonError(w, messageText("e.d11c6512f82b"), 400)
 		return
 	}
 	if e.Screen != "desktop" && e.Screen != "tablet" && e.Screen != "mobile" {
-		jsonError(w, "屏幕类型不支持", 400)
+		jsonError(w, messageText("e.baf9b4ab24e3"), 400)
 		return
 	}
-	referrer := "直接访问"
+	referrer := messageText("e.762cd9c2de69")
 	if e.Referrer != "" {
 		u, err := url.Parse(e.Referrer)
 		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" || len(u.Hostname()) > 253 {
-			jsonError(w, "来源格式错误", 400)
+			jsonError(w, messageText("e.885f47a0d4e2"), 400)
 			return
 		}
 		if !strings.EqualFold(u.Host, r.Host) {
@@ -127,7 +127,7 @@ func handleAnalytics(w http.ResponseWriter, r *http.Request) {
 	if value := r.URL.Query().Get("days"); value != "" {
 		n, err := strconv.Atoi(value)
 		if err != nil || (n != 1 && n != 7 && n != 30 && n != 90) {
-			jsonError(w, "统计范围不支持", 400)
+			jsonError(w, messageText("e.1d9d8f93ea27"), 400)
 			return
 		}
 		days = n
@@ -156,6 +156,14 @@ func handleAnalytics(w http.ResponseWriter, r *http.Request) {
 		if e != nil {
 			operationError(w, e)
 			return
+		}
+		if name == "browsers" || name == "systems" || name == "referrers" {
+			for i := range rows {
+				key := messageKey(rows[i].Name)
+				if key == "e.d2909f1647e7" || key == "e.762cd9c2de69" {
+					rows[i].Name = messageForLanguage(key, responseLanguage(w))
+				}
+			}
 		}
 		result[name] = rows
 	}

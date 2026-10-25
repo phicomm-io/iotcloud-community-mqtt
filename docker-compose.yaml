@@ -1,7 +1,7 @@
 services:
   setup:
     profiles: [tools]
-    image: phicomm-community-mqtt-backend:local
+    image: iotcloud-community-mqtt-backend:local
     build: ./backend
     user: "${APP_UID:-1000}:${APP_GID:-1000}"
     volumes:
@@ -20,7 +20,7 @@ services:
       - ./runtime/broker-data:/mosquitto/data
     networks: [broker]
   backend:
-    image: phicomm-community-mqtt-backend:local
+    image: iotcloud-community-mqtt-backend:local
     build: ./backend
     user: "${APP_UID:-1000}:${APP_GID:-1000}"
     restart: unless-stopped
@@ -38,7 +38,7 @@ services:
     depends_on: [mosquitto]
     networks: [broker, web]
   nginx:
-    image: phicomm-community-mqtt-web:local
+    image: iotcloud-community-mqtt-web:local
     build:
       context: .
       dockerfile: web/Dockerfile

@@ -27,15 +27,15 @@ func genCode() (string, error) {
 }
 
 // 发送验证码邮件
-func sendVerificationEmail(to, code string) error {
+func sendVerificationEmail(to, code, language string) error {
 	cfgMu.RLock()
 	s := cfg.SMTP
 	cfgMu.RUnlock()
 	addr := net.JoinHostPort(s.Host, strconv.Itoa(s.Port))
 	log.Printf("[email] 尝试发送验证码 to=%s smtp=%s tls=%v", to, addr, s.TLS)
 
-	subject := "MQTT 用户注册验证码"
-	body := fmt.Sprintf("您的验证码为：%s\n\n有效期 5 分钟，请勿泄露。", code)
+	subject := messageForLanguage("e.69499cf86fc1", language)
+	body := fmt.Sprintf(messageForLanguage("e.ab00888baac7", language), code)
 	msg := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n%s",
 		s.From, to, subject, body)
 

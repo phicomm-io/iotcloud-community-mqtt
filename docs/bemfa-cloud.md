@@ -62,7 +62,7 @@ scripts/test-integration.sh
 在前端仓库提交源码后执行 `python3 tools/build_release.py`（先安装 `requirements-build.txt`），取得 `build/frontend.tar.gz`。在后台仓库运行：
 
 ```sh
-FRONTEND_ARCHIVE=/absolute/path/to/phicomm-community-frontend/build/frontend.tar.gz scripts/test-browser-compose.sh
+FRONTEND_ARCHIVE=/absolute/path/to/iotcloud-community-frontend/build/frontend.tar.gz scripts/test-browser-compose.sh
 ```
 
 脚本先核对本仓库 `frontend.lock.json` 的提交与 SHA-256，再用 `web/Dockerfile.offline` 构建预览镜像，启动随机端口和临时数据的 Compose 环境，完成测试后清理。无需发布前端产物，也不会替换生产容器。

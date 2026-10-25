@@ -26,19 +26,19 @@ func (b *Banner) validate() error {
 		b.Audience = "before_login"
 	}
 	if b.Audience != "before_login" && b.Audience != "after_login" {
-		return errors.New("请选择登录前或登录后公告")
+		return errors.New(messageText("e.e7cd8a7a0397"))
 	}
 	b.Text, b.URL, b.Label = strings.TrimSpace(b.Text), strings.TrimSpace(b.URL), strings.TrimSpace(b.Label)
 	if !utf8.ValidString(b.Text+b.URL+b.Label) || utf8.RuneCountInString(b.Text) > 300 || len(b.URL) > 1000 || utf8.RuneCountInString(b.Label) > 40 || (b.Enabled && b.Text == "") {
-		return errors.New("请填写公告正文（最多 300 字），按钮文字最多 40 字")
+		return errors.New(messageText("e.0eb14a5fe05f"))
 	}
 	if (b.URL == "") != (b.Label == "") {
-		return errors.New("链接地址和按钮文字需要同时填写，或同时留空")
+		return errors.New(messageText("e.bc91627d3b31"))
 	}
 	if b.URL != "" {
 		u, err := url.Parse(b.URL)
 		if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Hostname() == "" || u.User != nil || strings.ContainsAny(b.URL, "\\ \t\r\n") || strings.IndexFunc(b.URL, unicode.IsControl) >= 0 {
-			return errors.New("链接需要使用完整的 HTTP 或 HTTPS 地址")
+			return errors.New(messageText("e.2acf49559231"))
 		}
 	}
 	return nil
@@ -119,6 +119,6 @@ func handleAdminBanner(w http.ResponseWriter, r *http.Request) {
 		}
 		jsonResp(w, b)
 	default:
-		jsonError(w, "方法不允许", http.StatusMethodNotAllowed)
+		jsonError(w, messageText("e.4f34574afee4"), http.StatusMethodNotAllowed)
 	}
 }

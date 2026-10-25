@@ -39,7 +39,7 @@ func (a *Application) authenticateWebsite(user, principal, password string) erro
 }
 func (a *Application) changePassword(user, password string) error {
 	if len(password) < 6 || len(password) > 256 {
-		return errors.New("密码长度须为 6–256 字节")
+		return errors.New(messageText("e.447af662b999"))
 	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -74,7 +74,7 @@ func handleMQTTPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(req.Password) < 6 || len(req.Password) > 256 {
-		jsonError(w, "密码长度须为 6–256 字节", 400)
+		jsonError(w, messageText("e.447af662b999"), 400)
 		return
 	}
 	u := currentUser(r)
@@ -86,5 +86,5 @@ func handleMQTTPassword(w http.ResponseWriter, r *http.Request) {
 		operationError(w, err)
 		return
 	}
-	jsonResp(w, map[string]string{"message": "MQTT 密码已修改，请更新设备连接密码"})
+	jsonResp(w, map[string]string{"message": messageText("e.14c896de34db")})
 }

@@ -7,7 +7,7 @@ TMCP 是 Tom MQTT Cloud Protocol。用户界面只显示 TMCP；协议元数据�
 旧部署以 Mosquitto `passwd` 和 `acl` 为账号、归属的权威来源；`mosquitto.db` 是消息持久化文件，不是业务账号库。迁移前备份整个部署目录，并单独校验 `passwd`、`acl` 的 SHA-256。备份包含密码哈希和配置密钥，必须存放于仓库忽略的私有目录。
 
 ```sh
-cd platform/backend
+cd backend
 go build -o /tmp/tmcp-platform .
 /tmp/tmcp-platform migrate --passwd /private/source/passwd --acl /private/source/acl --output /private/new-runtime
 ```

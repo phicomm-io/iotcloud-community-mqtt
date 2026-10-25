@@ -278,12 +278,12 @@ func TestRealDynamicSecurityDiscovery(t *testing.T) {
 	}
 	users := []string{"a+b@example.com", "scoped_bob"}
 	pw := "namespace-test-password"
-	for _, u := range users {
-		if e = a.register(u, pw); e != nil {
-			t.Fatal(e)
-		}
-		defer a.deleteUser(u)
+	seedLegacyAccount(t, a, users[0], pw)
+	defer a.deleteUser(users[0])
+	if e = a.register(users[1], pw); e != nil {
+		t.Fatal(e)
 	}
+	defer a.deleteUser(users[1])
 	connect := func(u string) mqtt.Client {
 		c := mqtt.NewClient(mqtt.NewClientOptions().AddBroker(b.url).SetTLSConfig(b.tls).SetUsername(u).SetPassword(pw).SetClientID("scope_" + randomID()[:12]).SetAutoReconnect(false))
 		if e := waitToken(c.Connect()); e != nil {
@@ -437,16 +437,16 @@ func TestRealDynamicSecurityAliasesAndLinkage(t *testing.T) {
 	}
 	defer s.Close()
 	a := &Application{store: s, broker: b}
-	user := "alias_" + randomID()[:8] + "@example.com"
-	alias := "short_" + randomID()[:8]
-	other := "other_" + randomID()[:8]
+	user := "legacy_" + strings.Repeat("x", 33) + randomID()[:8] + "@example.com"
+	alias := "short_" + randomID()[:26]
+	other := "other_" + randomID()[:26]
 	pw := "alias-test-password"
-	for _, u := range []string{user, other} {
-		if err = a.register(u, pw); err != nil {
-			t.Fatal(err)
-		}
-		defer a.deleteUser(u)
+	seedLegacyAccount(t, a, user, pw)
+	defer a.deleteUser(user)
+	if err = a.register(other, pw); err != nil {
+		t.Fatal(err)
 	}
+	defer a.deleteUser(other)
 	if err = a.addMQTTAlias(user, alias, pw); err != nil {
 		t.Fatal(err)
 	}

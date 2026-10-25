@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "repository": "phicomm-io/iotcloud-community-protocols",
+  "commit": "ad03c8a6890c0a4af7aa6d5988b4c6d0d721260a",
+  "registry_sha256": "67cd3269c4f2ee6859fa357a44f811da325834d5914674039f5ed6226be7db18",
+  "contracts": [
+    "tmcp-v2",
+    "platform-session-v1",
+    "daikin-hub-v1"
+  ]
+}
