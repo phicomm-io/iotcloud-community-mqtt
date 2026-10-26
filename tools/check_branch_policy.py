@@ -3,8 +3,9 @@
 import json
 import os
 from pathlib import Path
-import re
 import subprocess
+
+from platform_release import release_tag
 
 
 def check(event_name, event, ref):
@@ -16,8 +17,7 @@ def check(event_name, event, ref):
         if not allowed:
             raise ValueError('Use feature/* -> dev -> main; hotfix/* -> main, then sync main -> dev.')
     elif ref.startswith('refs/tags/v'):
-        if not re.fullmatch(r'refs/tags/v[1-9]\d*\.(0|[1-9]\d*)\.(0|[1-9]\d*)', ref):
-            raise ValueError('Publish stable v1+ semantic version tags only; v0.9.x is frozen.')
+        release_tag(Path.cwd(), ref.removeprefix('refs/tags/'))
         subprocess.run(['git', 'merge-base', '--is-ancestor', 'HEAD', 'origin/main'], check=True)
     elif event_name in ('push', 'workflow_dispatch'):
         branch = ref.removeprefix('refs/heads/')

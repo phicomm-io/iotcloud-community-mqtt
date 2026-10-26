@@ -22,7 +22,9 @@ jobs:
         with:
           fetch-depth: 0
       - name: Check branch workflow
-        run: python3 tools/check_branch_policy.py
+        run: |
+          python3 tools/check_branch_policy.py
+          python3 -m unittest discover -s tools -p 'test_*.py' -v
       - uses: actions/setup-go@v5
         with:
           go-version: '1.25'
@@ -59,6 +61,33 @@ jobs:
             dockerfile: ./web/Dockerfile
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Resolve exact release identity
+        id: version
+        run: python3 tools/platform_release.py metadata --tag "${{ github.ref_name }}" --commit "${{ github.sha }}" --output build/version.json --github-output "$GITHUB_OUTPUT"
+      - name: Preserve published candidate images
+        if: steps.version.outputs.prerelease == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if [ ! -f "docs/releases/$RELEASE_TAG.md" ]; then
+            echo "::error::Curated candidate release notes are missing; refusing to publish."
+            exit 1
+          fi
+          response=$(mktemp)
+          trap 'rm -f "$response" "$response.error"' EXIT
+          if gh api --include --silent "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" > "$response" 2> "$response.error"; then
+            echo "::error::Candidate release already exists. Reuse its manifest and image digests, or publish a new rc.N; existing candidate images will not be rebuilt."
+            exit 1
+          fi
+          protocol= status= remainder=
+          read -r protocol status remainder < "$response" || true
+          if [[ "$protocol" != HTTP/* ]] || [ "$status" != 404 ]; then
+            echo "::error::Cannot confirm candidate release is absent; refusing to build or change image tags."
+            exit 1
+          fi
       - name: Read pinned frontend version
         id: frontend
         run: echo "commit=$(python3 -c 'import json; print(json.load(open("frontend.lock.json"))["commit"])')" >> "$GITHUB_OUTPUT"
@@ -77,10 +106,8 @@ jobs:
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
         with:
           images: ghcr.io/${{ github.repository }}-${{ matrix.image }}
-          tags: |
-            type=raw,value=latest
-            type=sha,format=long
-            type=ref,event=tag
+          flavor: latest=false
+          tags: ${{ steps.version.outputs.metadata_tags }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
@@ -93,6 +120,8 @@ jobs:
           file: ${{ matrix.dockerfile }}
           platforms: linux/amd64,linux/arm64
           push: true
+          build-args: |
+            BUILD_VERSION_JSON=${{ steps.version.outputs.build_json }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.image }}
@@ -108,6 +137,12 @@ jobs:
             echo "Digest: \`$DIGEST\`"
             echo "Frontend: \`$FRONTEND_COMMIT\`"
           } >> "$GITHUB_STEP_SUMMARY"
+          python3 tools/platform_release.py image-record --metadata build/version.json --image-type "${{ matrix.image }}" --digest "$DIGEST" --output "build/image-${{ matrix.image }}.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: platform-release-${{ matrix.image }}
+          path: build/image-${{ matrix.image }}.json
+          if-no-files-found: error
 
   release-demo:
     name: Publish tagged release for Wiki demo
@@ -121,14 +156,64 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Resolve exact release identity
+        id: version
+        run: python3 tools/platform_release.py metadata --tag "${{ github.ref_name }}" --commit "${{ github.sha }}" --output build/version.json --github-output "$GITHUB_OUTPUT"
       - name: Fetch and verify the tagged frontend
         run: python3 scripts/frontend_release.py --output build/release-frontend
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: platform-release-*
+          path: build/release-images
+          merge-multiple: true
+      - name: Bind both published images to the release manifest
+        run: python3 tools/platform_release.py manifest --tag "${{ github.ref_name }}" --commit "${{ github.sha }}" --records build/release-images --output build/release-manifest.json
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.ref_name }}
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
         run: |
-          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release create "$RELEASE_TAG" --verify-tag --generate-notes
+          notes_file="docs/releases/$RELEASE_TAG.md"
+          if [ "$PRERELEASE" = true ] && [ ! -f "$notes_file" ]; then
+            echo "::error::Curated candidate release notes are missing; refusing to publish."
+            exit 1
           fi
-          gh release upload "$RELEASE_TAG" frontend.lock.json --clobber
+          release_exists=false
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            if [ "$PRERELEASE" = true ]; then
+              gh release create "$RELEASE_TAG" --verify-tag --notes-file "$notes_file" --prerelease --latest=false
+            else
+              gh release create "$RELEASE_TAG" --verify-tag --generate-notes
+            fi
+          else
+            release_exists=true
+          fi
+          if [ "$PRERELEASE" = true ]; then
+            previous=$(mktemp -d)
+            trap 'rm -rf "$previous"' EXIT
+            gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' > "$previous/names"
+            missing=()
+            for file in frontend.lock.json build/release-manifest.json; do
+              name=$(basename "$file")
+              if grep -Fxq "$name" "$previous/names"; then
+                gh release download "$RELEASE_TAG" --pattern "$name" --dir "$previous"
+                if ! cmp -s "$file" "$previous/$name"; then
+                  echo "::error::Published candidate asset differs: $name. Reuse the original release or publish a new rc.N."
+                  exit 1
+                fi
+              else
+                missing+=("$file")
+              fi
+            done
+            if [ "$release_exists" = true ]; then
+              gh release edit "$RELEASE_TAG" --notes-file "$notes_file" --prerelease --latest=false
+            fi
+            if [ "${#missing[@]}" -gt 0 ]; then
+              gh release upload "$RELEASE_TAG" "${missing[@]}"
+            fi
+          else
+            gh release upload "$RELEASE_TAG" frontend.lock.json build/release-manifest.json --clobber
+          fi

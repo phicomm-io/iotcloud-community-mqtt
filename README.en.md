@@ -62,7 +62,7 @@ Use `feature/* → dev → main`; see [CONTRIBUTING.md](CONTRIBUTING.md). Interf
 
 To update the frontend, copy `frontend.lock.json` from a verified `frontend-<complete commit>` Release, then verify its download and run platform/browser checks before committing. Offline `--archive` builds verify the same hash. Adjacent worktrees are not included automatically.
 
-Stable `v1.0.0` and subsequent release tags on `main` publish GitHub Releases and amd64/arm64 GHCR images. PRs, `dev` and ordinary `main` pushes run checks only. Image names are `iotcloud-community-mqtt-backend` and `iotcloud-community-mqtt-web`. Deploy a pinned version or digest while retaining configuration and data; publishing does not replace a running service. The website consumes the locked [platform demo](https://phicomm-io.github.io/demos/platform/) from formal Releases only.
+`VERSION` stores the numeric core, such as `1.0.0`. Matching `v1.0.0`, `v1.0.0-rc` or `v1.0.0-rc.N` tags on `main` publish GitHub Releases and amd64/arm64 GHCR images after checks pass. Candidates are prereleases, publish only their exact image tag and leave `latest` unchanged. PRs, `dev` and ordinary `main` pushes run checks only. Image names are `iotcloud-community-mqtt-backend` and `iotcloud-community-mqtt-web`; `release-manifest.json` records source, frontend pins and both image digests. See [operations](docs/OPERATIONS.md) for deployment and version inspection. The website consumes the locked [platform demo](https://phicomm-io.github.io/demos/platform/) from formal Releases only.
 
 ## License
 

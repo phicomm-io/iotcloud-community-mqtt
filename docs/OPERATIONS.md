@@ -52,10 +52,10 @@ Announcements are disabled by default and preserve administrator-provided text. 
 
 ## 预构建镜像与更新
 
-稳定标签通过 CI 发布 `ghcr.io/phicomm-io/iotcloud-community-mqtt-backend` 和 `ghcr.io/phicomm-io/iotcloud-community-mqtt-web`。使用已发布版本或工作流记录的 digest；不要把同一标签当作可替换的镜像。
+发布标签通过 CI 发布 `ghcr.io/phicomm-io/iotcloud-community-mqtt-backend` 和 `ghcr.io/phicomm-io/iotcloud-community-mqtt-web`。`VERSION` 只保存数字核心版本；标签须匹配该版本并指向已合入 `main` 的同一干净提交。支持 `v1.0.0`、`v1.0.0-rc` 和 `v1.0.0-rc.N`，编号允许 `0`，不允许前导零。候选版是非 latest 的 GitHub prerelease，镜像仅发布精确候选标签，不修改稳定版的 `latest`。使用已发布版本或工作流记录的 digest；不要把同一标签当作可替换的镜像。
 
 ```sh
-export IMAGE_TAG=v1.0.0 # 替换为实际已发布版本 / use a published version
+export IMAGE_TAG=v1.0.0-rc # 试用候选版；按需选择已发布版本 / select a published version
 # 保留现有 runtime 和配置 / retain existing runtime data and configuration
 docker compose -f docker-compose.yaml -f compose.ghcr.yaml pull backend nginx
 docker compose -f docker-compose.yaml -f compose.ghcr.yaml up -d --no-build --no-deps backend nginx
@@ -63,4 +63,8 @@ docker compose -f docker-compose.yaml -f compose.ghcr.yaml up -d --no-build --no
 
 镜像发布与部署分开，不会自动重启服务器。GHCR 包需要公开读取权限；私有包拉取可使用当前账号的 `read:packages` 凭据，禁止将令牌写入仓库。
 
-Publishing and deployment are separate. Keep runtime data and configuration when updating containers. Use a published version/digest and verify account login, MQTT permissions, device status and rollback before changing a production endpoint.
+Release 的 `release-manifest.json` 绑定完整源码提交、前端与协议锁，以及两个多架构镜像的 digest。镜像内 `/app/version.json`（backend）和站点 `/version.json`（web）提供同一准确版本及锁信息；普通本地构建显示 `development`。前端继续使用独立的 `frontend-<完整commit>` 制品，不另打平台 RC 版本。试用候选版时显式设置例如 `IMAGE_TAG=v1.0.0-rc`，并保留原有配置和数据。
+
+已存在同名候选 Release 时，CI 在构建镜像前停止；应复用原 manifest/digest，修改后发布新的 `rc.N`。候选资产补传只允许增加缺失文件，已有文件须逐字节相同；冲突会失败，不覆盖已公开资产。
+
+Publishing and deployment are separate. `VERSION` contains the numeric core; release tags must match it and the exact clean source on `main`. `-rc` and `-rc.N` candidates are GitHub prereleases, never latest, and publish only their exact image tags. An existing candidate Release stops image rebuilding: reuse its original manifest/digests or publish a new `rc.N`. Existing candidate assets must match byte for byte; only missing assets can be added. `release-manifest.json` binds source, frontend/protocol pins and both multi-architecture image digests. Inspect `/app/version.json` inside the backend image or `/version.json` on the web service; ordinary local builds identify as `development`. The frontend keeps its independent immutable commit release. Set an explicit candidate `IMAGE_TAG` when testing, retain configuration/data, and verify login, MQTT permissions, device status and rollback before changing a production endpoint.
