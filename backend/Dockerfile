@@ -1,6 +1,10 @@
 FROM alpine:3.21 AS version-metadata
+ARG BUILD_VERSION_JSON_BASE64
 ARG BUILD_VERSION_JSON
-RUN if [ -n "$BUILD_VERSION_JSON" ]; then \
+RUN if [ -n "$BUILD_VERSION_JSON_BASE64" ]; then \
+      printf '%s' "$BUILD_VERSION_JSON_BASE64" | base64 -d || exit 1; \
+      printf '\n'; \
+    elif [ -n "$BUILD_VERSION_JSON" ]; then \
       printf '%s\n' "$BUILD_VERSION_JSON"; \
     else \
       printf '%s\n' '{"schema":1,"version":"development","channel":"development","prerelease":false}'; \

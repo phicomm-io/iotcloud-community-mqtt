@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Resolve release identity and bind published images to the pinned frontend."""
 import argparse
+import base64
 import hashlib
 import json
 from pathlib import Path
@@ -75,9 +76,12 @@ def publication_settings(info):
     version = parse_tag(info['tag'])
     tags = ['type=ref,event=tag'] if version.prerelease else [
         'type=raw,value=latest', 'type=sha,format=long', 'type=ref,event=tag']
+    build_json = json.dumps(info, sort_keys=True, separators=(',', ':'))
+    # Preserve JSON quotes through the build action's CSV input parser.
     return {'version': version.version, 'tag': version.tag, 'channel': version.channel,
             'prerelease': str(version.prerelease).lower(), 'metadata_tags': '\n'.join(tags),
-            'build_json': json.dumps(info, sort_keys=True, separators=(',', ':'))}
+            'build_json': build_json,
+            'build_json_base64': base64.b64encode(build_json.encode()).decode('ascii')}
 
 
 def image_record(info, image_type, digest):

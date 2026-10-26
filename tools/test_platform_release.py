@@ -1,3 +1,4 @@
+import base64
 import copy
 import hashlib
 import json
@@ -134,6 +135,17 @@ class ReleaseFixture(unittest.TestCase):
                          ['type=raw,value=latest', 'type=sha,format=long', 'type=ref,event=tag'])
         self.assertEqual(stable['prerelease'], 'false')
 
+    def test_build_metadata_transport_preserves_nested_arrays_and_special_characters(self):
+        info = self.info()
+        info['protocols']['contracts'] = ['tmcp-v2', 'platform-session-v1', 'daikin-hub-v1']
+        info['transport_example'] = {'text': '中文, "quotes" \\ slash\nline', 'values': [False, None, 12]}
+        settings = publication_settings(info)
+        encoded = settings['build_json_base64']
+        self.assertRegex(encoded, r'\A[A-Za-z0-9+/]+={0,2}\Z')
+        decoded = base64.b64decode(encoded, validate=True).decode()
+        self.assertEqual(decoded, settings['build_json'])
+        self.assertEqual(json.loads(decoded), info)
+
     def test_manifest_binds_both_images_source_frontend_and_digest(self):
         info = self.info()
         records = [image_record(info, image, 'sha256:' + digest * 64)
@@ -168,6 +180,7 @@ class ReleaseFixture(unittest.TestCase):
         settings = github_output.read_text()
         self.assertIn('prerelease=true\n', settings)
         self.assertIn('metadata_tags=type=ref,event=tag\n', settings)
+        self.assertIn('build_json_base64=' + publication_settings(self.info())['build_json_base64'] + '\n', settings)
         self.assertNotIn('latest', settings)
 
 
@@ -231,7 +244,8 @@ class WorkflowPublicationTest(unittest.TestCase):
         workflow = (ROOT / '.github/workflows/platform.yml').read_text()
         self.assertIn('flavor: latest=false', workflow)
         self.assertIn('tags: ${{ steps.version.outputs.metadata_tags }}', workflow)
-        self.assertIn('BUILD_VERSION_JSON=${{ steps.version.outputs.build_json }}', workflow)
+        self.assertIn('BUILD_VERSION_JSON_BASE64=${{ steps.version.outputs.build_json_base64 }}', workflow)
+        self.assertNotIn('BUILD_VERSION_JSON=${{', workflow)
         self.assertIn("python3 -m unittest discover -s tools -p 'test_*.py' -v", workflow)
         self.assertNotIn('docker compose', workflow)
 

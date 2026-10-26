@@ -121,7 +121,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           build-args: |
-            BUILD_VERSION_JSON=${{ steps.version.outputs.build_json }}
+            BUILD_VERSION_JSON_BASE64=${{ steps.version.outputs.build_json_base64 }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.image }}
