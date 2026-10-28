@@ -1,0 +1,62 @@
+=== RUN   TestBemfaRealWireRelayIsolationAndNoReplay
+=== RUN   TestBemfaRealWireRelayIsolationAndNoReplay/json
+=== RUN   TestBemfaRealWireRelayIsolationAndNoReplay/msgpack
+--- PASS: TestBemfaRealWireRelayIsolationAndNoReplay (4.24s)
+    --- PASS: TestBemfaRealWireRelayIsolationAndNoReplay/json (2.11s)
+    --- PASS: TestBemfaRealWireRelayIsolationAndNoReplay/msgpack (2.13s)
+=== RUN   TestRelayPreservesOpaqueBinary
+--- PASS: TestRelayPreservesOpaqueBinary (0.00s)
+=== RUN   TestCloudMixedWireDeviceMatrix
+    cloud_matrix_test.go:230: PASS mixed JSON/MP online, result/state and cross-account mapping isolation
+    cloud_matrix_test.go:246: PASS malformed/wrong-codec/foreign state cannot replace known readings
+    cloud_matrix_test.go:272: PASS live codec upgrade/rollback without worker reload; malformed discovery rejected
+    cloud_matrix_test.go:295: PASS busy no-replay, offline drop, recovery without delayed write
+--- PASS: TestCloudMixedWireDeviceMatrix (6.73s)
+=== RUN   TestDiscoveryCodecUpgradeDowngrade
+--- PASS: TestDiscoveryCodecUpgradeDowngrade (0.85s)
+=== RUN   TestBoundedMessagePack
+--- PASS: TestBoundedMessagePack (0.00s)
+=== RUN   TestMetadataACLScoped
+--- PASS: TestMetadataACLScoped (0.81s)
+=== RUN   TestBemfaRealWireRelayIsolationAndNoReplay
+=== RUN   TestBemfaRealWireRelayIsolationAndNoReplay/json
+=== RUN   TestBemfaRealWireRelayIsolationAndNoReplay/msgpack
+--- PASS: TestBemfaRealWireRelayIsolationAndNoReplay (4.30s)
+    --- PASS: TestBemfaRealWireRelayIsolationAndNoReplay/json (2.21s)
+    --- PASS: TestBemfaRealWireRelayIsolationAndNoReplay/msgpack (2.08s)
+=== RUN   TestRelayPreservesOpaqueBinary
+--- PASS: TestRelayPreservesOpaqueBinary (0.00s)
+=== RUN   TestCloudMixedWireDeviceMatrix
+    cloud_matrix_test.go:230: PASS mixed JSON/MP online, result/state and cross-account mapping isolation
+    cloud_matrix_test.go:246: PASS malformed/wrong-codec/foreign state cannot replace known readings
+    cloud_matrix_test.go:272: PASS live codec upgrade/rollback without worker reload; malformed discovery rejected
+    cloud_matrix_test.go:295: PASS busy no-replay, offline drop, recovery without delayed write
+--- PASS: TestCloudMixedWireDeviceMatrix (2.30s)
+=== RUN   TestDiscoveryCodecUpgradeDowngrade
+--- PASS: TestDiscoveryCodecUpgradeDowngrade (0.61s)
+=== RUN   TestBoundedMessagePack
+--- PASS: TestBoundedMessagePack (0.00s)
+=== RUN   TestMetadataACLScoped
+--- PASS: TestMetadataACLScoped (0.60s)
+=== RUN   TestBemfaRealWireRelayIsolationAndNoReplay
+=== RUN   TestBemfaRealWireRelayIsolationAndNoReplay/json
+=== RUN   TestBemfaRealWireRelayIsolationAndNoReplay/msgpack
+--- PASS: TestBemfaRealWireRelayIsolationAndNoReplay (4.39s)
+    --- PASS: TestBemfaRealWireRelayIsolationAndNoReplay/json (2.31s)
+    --- PASS: TestBemfaRealWireRelayIsolationAndNoReplay/msgpack (2.08s)
+=== RUN   TestRelayPreservesOpaqueBinary
+--- PASS: TestRelayPreservesOpaqueBinary (0.00s)
+=== RUN   TestCloudMixedWireDeviceMatrix
+    cloud_matrix_test.go:230: PASS mixed JSON/MP online, result/state and cross-account mapping isolation
+    cloud_matrix_test.go:246: PASS malformed/wrong-codec/foreign state cannot replace known readings
+    cloud_matrix_test.go:272: PASS live codec upgrade/rollback without worker reload; malformed discovery rejected
+    cloud_matrix_test.go:295: PASS busy no-replay, offline drop, recovery without delayed write
+--- PASS: TestCloudMixedWireDeviceMatrix (2.68s)
+=== RUN   TestDiscoveryCodecUpgradeDowngrade
+--- PASS: TestDiscoveryCodecUpgradeDowngrade (0.58s)
+=== RUN   TestBoundedMessagePack
+--- PASS: TestBoundedMessagePack (0.00s)
+=== RUN   TestMetadataACLScoped
+--- PASS: TestMetadataACLScoped (0.53s)
+PASS
+ok  	github.com/phicomm-io/iotcloud-community-mqtt/backend	29.662s

@@ -515,6 +515,10 @@ func (w *bemfaWorker) run() {
 					if !s.online {
 						s.data = nil
 						s.probe = ""
+						// Offline invalidates the old probe. A quick reconnect
+						// must be able to acquire state immediately, even inside
+						// the previous connection's one-second probe limit.
+						s.lastProbe = time.Time{}
 						for id, m := range pending {
 							if bemfaBase(m.Device) == base {
 								delete(pending, id)
