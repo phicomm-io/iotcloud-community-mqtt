@@ -2,8 +2,14 @@
 
 This change is source only. It does not deploy a backend, change a running broker,
 publish an image, merge a branch, or declare the field M1 accepted. Field M1 remains
-`waiting_acl`/BLOCKED until actual post-change runtime evidence exists. The device
-logs available in this session did not expose its rejected SUBACK filter/code.
+`waiting_acl`/BLOCKED until actual post-change runtime evidence exists.
+
+Subsequent authorized read-only field probes confirmed the deployed M1 credentials
+match and recorded these actual SUBACKs (account/device identifiers omitted):
+`sensor/+/+` =128, `sensor/+/metadata` =128, established `sensor/+/state` =1,
+and `<device base>/ha/command` =1. This supports the deployed broker ACL mismatch
+as the M1 readiness blocker. It does not constitute a repaired-device PASS; no
+production ACL/deployment change is included in this source PR.
 
 ## Smallest production options (not performed)
 
@@ -96,3 +102,32 @@ pinned platform frontend and protocol release locks remain unchanged in this PR;
 full new-device browser acceptance and release pin coordination remain separate
 integration gates. Neither the historical artifacts nor current CI should be
 reported as a post-deployment M1 PASS.
+
+
+## HA JSON and native MessagePack topic separation
+
+The existing per-device `phicomm/v2/<owned principal>/<model>/<device>/#` role
+already includes `/ha/command` and `/ha/state`, as well as native `/command` and
+`/state`. No new HA ACL grant is needed. The same-account/alias access is
+intentional; foreign device namespaces remain denied. ACLs restrict topics and
+principals, not payload codecs. The platform is not claiming content validation
+inside the broker.
+
+The native manager relay subscribes to `phicomm/v2/+/+/+/state` and `/result`,
+which do not match the additional `/ha/` level. Bemfa's route lookup also requires
+the exact native device base. Its device decoder requires the codec selected by
+discovery; JSON from HA cannot be accepted as native MessagePack state. HA stays
+an independent JSON compatibility endpoint. Legacy native JSON devices remain
+supported on their original native topics, selected by schema-1 discovery.
+
+`TestRealDynamicSecurityHANativeWireSeparation` explicitly checks `/ha/command`,
+`/ha/state`, native `/command`, and `/state` on an MP device using a real isolated
+broker: owner SUBACK1, foreign SUBACK128, byte-identical HA JSON/native MP delivery,
+only native state entering the manager relay, and native decoder rejection of HA
+JSON. No production ACL broadening or firmware change was necessary.
+
+Final isolated-broker extension: HA/native separation plus the exact M1 wildcard
+regression each ran three times under `-race` (six PASS records,14.765s). The
+immutable log is `docs/test-results/rc4-cloud/ha-native-race.log`. The default full
+backend suite also passed locally (23.303s). Earlier GitHub host/browser, contract,
+and branch-policy checks passed; subsequent pushes rerun the same CI gates.

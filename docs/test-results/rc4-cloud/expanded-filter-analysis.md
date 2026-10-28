@@ -56,3 +56,14 @@ revocation unit test under `-race`; all six cases PASS, 9.036s. It records sanit
 filter names and SUBACK codes without credentials. `expanded-filter-full-suite.log`
 records the complete default backend test run. The broker is an independent
 localhost-only disposable container; its generated runtime is removed afterward.
+
+
+## Subsequent field confirmation
+
+After this initial source diagnosis, authorized read-only probes confirmed matching
+credentials and actual deployed broker SUBACKs: `sensor/+/+` =128,
+`sensor/+/metadata` =128, `sensor/+/state` =1, and `<base>/ha/command` =1.
+Account/device identifiers and credentials are intentionally omitted. This supports
+the ACL mismatch diagnosis; the field device still remains BLOCKED pending an
+authorized fix and successful post-change acceptance. No production change is
+performed by this PR.
