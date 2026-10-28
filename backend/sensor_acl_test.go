@@ -49,6 +49,15 @@ func TestM1DisplayACLTracksPrincipalScopesAndRevocation(t *testing.T) {
 					t.Fatalf("%s sensor read %s = %t, want %t", principal, kind, got, wantRead)
 				}
 			}
+			wantExpanded := principal != "bob" && wantM1
+			if got := hasACL(account, "subscribeLiteral", root+"/sensor/+/+"); got != wantExpanded {
+				t.Fatalf("%s expanded sensor filter = %t want %t", principal, got, wantExpanded)
+			}
+			for _, kind := range []string{"publishClientSend", "publishClientReceive", "subscribePattern"} {
+				if hasACL(account, kind, root+"/sensor/+/+") {
+					t.Fatal("expanded filter gained broad message permission", principal, kind)
+				}
+			}
 			wantAvailability := principal != "bob" && wantM1
 			if got := hasACL(account, "subscribeLiteral", root+"/+/+/availability"); got != wantAvailability {
 				t.Fatalf("%s availability subscription = %t, want %t", principal, got, wantAvailability)

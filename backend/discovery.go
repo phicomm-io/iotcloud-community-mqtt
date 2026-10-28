@@ -106,6 +106,10 @@ func (a *Application) accountRules(username string) ([]Rule, error) {
 	}
 	for key := range sensorReaders {
 		base := "phicomm/v2/" + key + "/sensor/"
+		if hasM1 {
+			// Subscription only: receive ACLs still restrict state/metadata.
+			rules = append(rules, Rule{"subscribeLiteral", base + "+/+", true, 1})
+		}
 		for _, leaf := range []string{"state", "metadata"} {
 			rules = append(rules, Rule{"publishClientReceive", base + "+/" + leaf, true, 1}, Rule{"subscribePattern", base + "+/" + leaf, true, 1})
 		}
