@@ -30,13 +30,17 @@ func colonMAC(mac string) string {
 func isValidMAC(mac string) bool { return macRegex.MatchString(strings.TrimSpace(mac)) }
 
 type Device struct {
-	Namespace    string `json:"namespace,omitempty"`
-	MAC          string `json:"mac"`
-	Model        string `json:"model"`
-	Version      string `json:"version"`
-	Status       string `json:"status"`
-	Username     string `json:"username,omitempty"`
-	MQTTUsername string `json:"mqtt_username,omitempty"`
+	WireFormat      string `json:"wire_format,omitempty"`
+	WireVersion     int    `json:"wire_version,omitempty"`
+	FirmwareVersion string `json:"firmware_version,omitempty"`
+	Variant         string `json:"variant,omitempty"`
+	Namespace       string `json:"namespace,omitempty"`
+	MAC             string `json:"mac"`
+	Model           string `json:"model"`
+	Version         string `json:"version"`
+	Status          string `json:"status"`
+	Username        string `json:"username,omitempty"`
+	MQTTUsername    string `json:"mqtt_username,omitempty"`
 }
 
 func validateDevice(d *Device) error {
@@ -89,6 +93,7 @@ func openStore(path string) (*Store, error) {
  CREATE TABLE IF NOT EXISTS github_oauth_flows(state TEXT PRIMARY KEY,browser_challenge TEXT NOT NULL,verifier TEXT NOT NULL,return_url TEXT NOT NULL,link_session TEXT NOT NULL DEFAULT '',phase TEXT NOT NULL DEFAULT 'pending',subject TEXT NOT NULL DEFAULT '',login TEXT NOT NULL DEFAULT '',email TEXT NOT NULL DEFAULT '',error TEXT NOT NULL DEFAULT '',expires INTEGER NOT NULL);
  CREATE INDEX IF NOT EXISTS github_flow_expiry ON github_oauth_flows(expires);
  CREATE TABLE IF NOT EXISTS bemfa_integrations(username TEXT PRIMARY KEY REFERENCES users(username) ON DELETE CASCADE,config BLOB NOT NULL,revision TEXT NOT NULL,key_hash TEXT UNIQUE);
+ CREATE TABLE IF NOT EXISTS device_wire(username TEXT NOT NULL REFERENCES users(username) ON DELETE CASCADE,mqtt_username TEXT NOT NULL,mac TEXT NOT NULL,format TEXT NOT NULL,wire_version INTEGER NOT NULL,firmware_version TEXT NOT NULL,variant TEXT NOT NULL,PRIMARY KEY(username,mqtt_username,mac));
  CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY,value TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS analytics_events(id INTEGER PRIMARY KEY,ts INTEGER NOT NULL,visitor TEXT NOT NULL,visit TEXT NOT NULL,event TEXT NOT NULL,page TEXT NOT NULL,model TEXT NOT NULL,referrer TEXT NOT NULL,browser TEXT NOT NULL,os TEXT NOT NULL,screen TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS verification_emails(id INTEGER PRIMARY KEY AUTOINCREMENT,email TEXT NOT NULL,code TEXT NOT NULL DEFAULT '',created_at INTEGER NOT NULL,sent_at INTEGER NOT NULL DEFAULT 0,expires_at INTEGER NOT NULL DEFAULT 0,status TEXT NOT NULL,detail TEXT NOT NULL DEFAULT '',registered_at INTEGER NOT NULL DEFAULT 0,username TEXT NOT NULL DEFAULT '');

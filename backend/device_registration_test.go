@@ -84,9 +84,9 @@ func TestManualTMCPRegistrationAndRestore(t *testing.T) {
 						t.Fatal("incorrect device role assignment", b.attached)
 					}
 					want := "phicomm/v2/" + userKey("alice") + "/" + model + "/" + mac + "/#"
-					expected := 4
+					expected := 5
 					if model == "m1" || model == "daikin" {
-						expected = 6
+						expected = 7
 					}
 					if rules := b.acl[role]; len(rules) != expected || rules[2].ACLType != "subscribePattern" || rules[2].Topic != want || !rules[2].Allow {
 						t.Fatal("incorrect TMCP ACL", rules)
