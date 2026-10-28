@@ -191,7 +191,21 @@ func assertNoBemfaActuation(t *testing.T, acts <-chan map[string]interface{}) {
 	}
 }
 func TestBemfaRealWireRelayIsolationAndNoReplay(t *testing.T) {
+	for _, format := range []string{"json", "msgpack"} {
+		t.Run(format, func(t *testing.T) { testBemfaRealWire(t, format) })
+	}
+}
+func testBemfaRealWire(t *testing.T, format string) {
 	a, r, d := testBemfa(t)
+	if format == "msgpack" {
+		announcement := binaryAnnouncement(t, d.MAC)
+		announcement["model"] = "tc1"
+		announcement["variant"] = "tc1"
+		data, _ := encodeDeviceWire("msgpack", announcement)
+		if err := a.discover("phicomm/v2/"+userKey(d.Username)+"/discovery/"+d.MAC, data); err != nil {
+			t.Fatal(err)
+		}
+	}
 	original, cloud := newWireBroker(t), newWireBroker(t)
 	b, err := newDynamicBroker(original.url(), "", "manager", "fixture")
 	if err != nil {
@@ -223,7 +237,7 @@ func TestBemfaRealWireRelayIsolationAndNoReplay(t *testing.T) {
 			Params map[string]interface{} `json:"params"`
 			ID     string                 `json:"request_id"`
 		}
-		if json.Unmarshal(m.Payload(), &request) != nil {
+		if decodeDeviceWire(m.Payload(), &request) != nil {
 			return
 		}
 		stateMu.Lock()
@@ -238,12 +252,12 @@ func TestBemfaRealWireRelayIsolationAndNoReplay(t *testing.T) {
 		stateMu.Unlock()
 		states := map[string]interface{}{"socket_states": []int{0, 0, 0, 0, 0, value}}
 		if request.Action == "status.get" {
-			data, _ := json.Marshal(map[string]interface{}{"request_id": request.ID, "code": "ok", "data": states})
+			data, _ := encodeDeviceWire(format, map[string]interface{}{"request_id": request.ID, "code": "ok", "data": states})
 			device.Publish(base+"/result", 0, false, data)
 		} else {
-			data, _ := json.Marshal(states)
+			data, _ := encodeDeviceWire(format, states)
 			device.Publish(base+"/state", 0, true, data)
-			result, _ := json.Marshal(map[string]interface{}{"request_id": request.ID, "code": "accepted", "data": map[string]interface{}{}})
+			result, _ := encodeDeviceWire(format, map[string]interface{}{"request_id": request.ID, "code": "accepted", "data": map[string]interface{}{}})
 			device.Publish(base+"/result", 0, false, result)
 		}
 	}))
