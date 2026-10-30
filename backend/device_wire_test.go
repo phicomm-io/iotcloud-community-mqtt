@@ -125,6 +125,27 @@ func TestS30DiscoveryKeepsIdentityAndBinaryOnlyCodec(t *testing.T) {
 	if err != nil || len(list) != 1 || list[0].Model != "s30-v1b" || list[0].WireFormat != "msgpack" {
 		t.Fatal(list, err)
 	}
+	b := a.broker.(*fakeBroker)
+	role := deviceRole(d)
+	if !b.attached["alice"][role] || b.attached["bob"][role] {
+		t.Fatal("S30 role ownership changed", b.attached)
+	}
+	root := "phicomm/v2/" + userKey("alice")
+	for _, kind := range []string{"publishClientSend", "publishClientReceive", "subscribePattern"} {
+		if !hasACL(b.acl[role], kind, root+"/s30-v1b/"+mac+"/#") {
+			t.Fatal("S30 command/state authorization missing", kind)
+		}
+	}
+	for _, leaf := range []string{"metadata", "state"} {
+		if !hasACL(b.acl[role], "publishClientSend", root+"/sensor/"+mac+"/"+leaf) {
+			t.Fatal("S30 sensor publication missing", leaf)
+		}
+	}
+	for _, topic := range []string{root + "/sensor/+/state", root + "/sensor/ffffffffffff/state", root + "/sensor/" + mac + "/command", "phicomm/v2/" + userKey("bob") + "/sensor/" + mac + "/state"} {
+		if hasACL(b.acl[role], "publishClientSend", topic) {
+			t.Fatal("S30 received extra sensor permission", topic)
+		}
+	}
 	// The exact new model never downgrades to the old JSON discovery contract.
 	if err = a.discover(topic, []byte(`{"schema":1,"protocol":"tmcp","protocol_version":2,"version":"v2","model":"s30-v1b"}`)); err == nil {
 		t.Fatal("S30 JSON downgrade accepted")
