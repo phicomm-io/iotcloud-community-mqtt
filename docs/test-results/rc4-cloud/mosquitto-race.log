@@ -1,0 +1,11 @@
+=== RUN   TestRealDynamicSecurityMixedCodecs
+    cloud_matrix_test.go:426: PASS actual Mosquitto Dynamic Security: JSON and MP same-MAC devices online, fixed control/state codecs, foreign receive denied
+--- PASS: TestRealDynamicSecurityMixedCodecs (2.46s)
+=== RUN   TestRealDynamicSecurityMixedCodecs
+    cloud_matrix_test.go:426: PASS actual Mosquitto Dynamic Security: JSON and MP same-MAC devices online, fixed control/state codecs, foreign receive denied
+--- PASS: TestRealDynamicSecurityMixedCodecs (2.22s)
+=== RUN   TestRealDynamicSecurityMixedCodecs
+    cloud_matrix_test.go:426: PASS actual Mosquitto Dynamic Security: JSON and MP same-MAC devices online, fixed control/state codecs, foreign receive denied
+--- PASS: TestRealDynamicSecurityMixedCodecs (2.54s)
+PASS
+ok  	github.com/phicomm-io/iotcloud-community-mqtt/backend	8.246s

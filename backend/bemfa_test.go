@@ -27,6 +27,10 @@ func testBemfa(t *testing.T) (*Application, *BemfaRelay, Device) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Scoped devices become writable only after authenticated discovery selects a codec.
+	if err = a.discover("phicomm/v2/"+userKey("alice")+"/discovery/"+d.MAC, []byte(`{"schema":1,"protocol":"tmcp","protocol_version":2,"version":"v2","model":"tc1"}`)); err != nil {
+		t.Fatal(err)
+	}
 	return a, r, d
 }
 func bemfaRequest(t *testing.T, a *Application, user, method, body string) *httptest.ResponseRecorder {
