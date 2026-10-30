@@ -294,12 +294,14 @@ func (a *Application) discover(topic string, payload []byte) error {
 		Model             string   `json:"model"`
 		Version           string   `json:"version"`
 		Protocol          string   `json:"protocol"`
+		CommandProtocol   string   `json:"command_protocol"`
 		ProtocolVersion   int      `json:"protocol_version"`
 	}
 	if err = decodeDeviceWire(payload, &announcement); err != nil {
 		return err
 	}
-	if (announcement.Schema != 1 && announcement.Schema != 2) || announcement.Protocol != "tmcp" || announcement.ProtocolVersion != 2 || announcement.Version != "v2" {
+	protocolOK := announcement.Protocol == "tmcp" || (announcement.Schema == 2 && announcement.Protocol == "openiot" && announcement.CommandProtocol == "tmcp")
+	if (announcement.Schema != 1 && announcement.Schema != 2) || !protocolOK || announcement.ProtocolVersion != 2 || announcement.Version != "v2" || (announcement.Model == "s30-v1b" && announcement.Schema != 2) {
 		return errors.New("unsupported schema")
 	}
 	d := Device{Namespace: "account", Username: username, MAC: parts[4], Model: announcement.Model, Version: announcement.Version, Status: "pending", WireFormat: "json"}

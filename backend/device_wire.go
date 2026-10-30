@@ -83,11 +83,14 @@ func validWireIdentity(s string, limit int) bool {
 // Only discovery chooses a codec. A write never guesses or falls back after an error.
 func (s *Store) deviceCodec(d Device) (string, error) {
 	if d.Namespace == "" {
+		if d.Model == "s30-v1b" {
+			return "", errUnavailable
+		}
 		return "json", nil
 	}
 	var format string
 	err := s.QueryRow("SELECT format FROM device_wire WHERE username=? AND mqtt_username=? AND mac=?", d.Username, topicUsername(d), d.MAC).Scan(&format)
-	if err != nil || (format != "json" && format != "msgpack") {
+	if err != nil || (format != "json" && format != "msgpack") || (d.Model == "s30-v1b" && format != "msgpack") {
 		return "", errUnavailable
 	}
 	return format, nil

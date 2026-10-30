@@ -16,6 +16,15 @@ Legacy JSON announcements keep `schema:1`, `protocol:"tmcp"`, `protocol_version:
 nonempty printable `firmware_version` (64 bytes max), `variant` (32 bytes max),
 `wire_version:1`, `wire_formats:["msgpack"]`, and `default_wire_format:"msgpack"`.
 
+S30-V1B (`model:"s30-v1b"`) uses the public protocol name `openiot` with
+`command_protocol:"tmcp"` for the internal command envelope. Its schema-2
+announcement carries the same identity and binary fields above. This model
+requires validated discovery and MessagePack, including manually entered devices;
+schema-1 JSON announcements and legacy unscoped JSON command paths are refused.
+Existing models retain their documented legacy JSON support. The frontend and
+backend must both include S30-V1B support; publishing a static app alone does not
+deploy this server change.
+
 Codec and firmware identity persist per canonical account, MQTT principal, and MAC.
 Every valid discovery replaces this record, including upgrade and downgrade. The
 account device list exposes `wire_format`, `wire_version`, `firmware_version`, and

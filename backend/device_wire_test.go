@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/vmihailenco/msgpack/v5"
+	"os"
 	"testing"
 )
 
@@ -97,5 +98,57 @@ func TestManualRegistrationCannotSelectCodec(t *testing.T) {
 	d.Namespace = "account"
 	if _, err := a.store.deviceCodec(d); err == nil {
 		t.Fatal("account API selected codec without discovery")
+	}
+}
+
+func TestS30DiscoveryKeepsIdentityAndBinaryOnlyCodec(t *testing.T) {
+	a := testApp(t)
+	mac := "aabbccddeeff"
+	topic := "phicomm/v2/" + userKey("alice") + "/discovery/" + mac
+	// Captured from the actual firmware C writer, not encoded by this server.
+	data, err := os.ReadFile("testdata/s30-announcement.msgpack")
+	if err != nil {
+		t.Fatal(err)
+	}
+	announcement := map[string]any{}
+	if err = msgpack.Unmarshal(data, &announcement); err != nil {
+		t.Fatal(err)
+	}
+	if err = a.discover(topic, data); err != nil {
+		t.Fatal(err)
+	}
+	d := Device{Namespace: "account", Username: "alice", MAC: mac, Model: "s30-v1b", Version: "v2"}
+	if codec, err := a.store.deviceCodec(d); err != nil || codec != "msgpack" {
+		t.Fatal(codec, err)
+	}
+	list, err := a.store.scopedDevices("alice")
+	if err != nil || len(list) != 1 || list[0].Model != "s30-v1b" || list[0].WireFormat != "msgpack" {
+		t.Fatal(list, err)
+	}
+	// The exact new model never downgrades to the old JSON discovery contract.
+	if err = a.discover(topic, []byte(`{"schema":1,"protocol":"tmcp","protocol_version":2,"version":"v2","model":"s30-v1b"}`)); err == nil {
+		t.Fatal("S30 JSON downgrade accepted")
+	}
+	for key, value := range map[string]any{"device_id": "001122334455", "command_protocol": "unknown", "wire_version": 2, "firmware_version": "", "variant": ""} {
+		invalid := map[string]any{}
+		for k, v := range announcement {
+			invalid[k] = v
+		}
+		invalid[key] = value
+		payload, _ := msgpack.Marshal(invalid)
+		if err = a.discover(topic, payload); err == nil {
+			t.Fatal("accepted invalid S30 field", key)
+		}
+	}
+	if codec, err := a.store.deviceCodec(d); err != nil || codec != "msgpack" {
+		t.Fatal("invalid announcement changed codec", codec, err)
+	}
+	var reply map[string]any
+	if err = a.store.decodeDevice(d, []byte(`{"code":"ok"}`), &reply); err == nil {
+		t.Fatal("S30 JSON status accepted")
+	}
+	d.Namespace = ""
+	if _, err = a.store.deviceCodec(d); err == nil {
+		t.Fatal("S30 inherited legacy global JSON codec")
 	}
 }

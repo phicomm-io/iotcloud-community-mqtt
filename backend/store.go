@@ -59,7 +59,7 @@ func validateDevice(d *Device) error {
 		if d.Version != "v1" && d.Version != "v2" {
 			return errors.New(messageText("e.150d651d5679"))
 		}
-	case "m1", "a1", "daikin":
+	case "m1", "a1", "daikin", "s30-v1b":
 		if d.Version == "" {
 			d.Version = "v2"
 		}
