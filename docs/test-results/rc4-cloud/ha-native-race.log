@@ -1,0 +1,38 @@
+=== RUN   TestRealDynamicSecurityM1ExpandedSensorFilter
+    expanded_filter_test.go:81: SUBACK phicomm/v2/u_<masked>/sensor/+/state = 1
+    expanded_filter_test.go:82: SUBACK phicomm/v2/u_<masked>/sensor/+/+ = 128
+    expanded_filter_test.go:94: SUBACK phicomm/v2/u_<masked>/sensor/+/metadata = 1
+    expanded_filter_test.go:95: SUBACK phicomm/v2/u_<masked>/sensor/+/+ = 128
+    expanded_filter_test.go:101: SUBACK phicomm/v2/u_<masked>/sensor/+/+ = 1
+    expanded_filter_test.go:102: SUBACK phicomm/v2/u_foreign/sensor/+/+ = 128
+    expanded_filter_test.go:136: PASS old policy rejects exact M1 filter; patched policy grants QoS1 without command/foreign receive access
+--- PASS: TestRealDynamicSecurityM1ExpandedSensorFilter (4.76s)
+=== RUN   TestRealDynamicSecurityHANativeWireSeparation
+    ha_native_wire_test.go:128: PASS owned HA JSON command/state and native MP command/state stay byte-transparent on distinct topics; foreign subscriptions denied; HA JSON never enters native relay/decoder
+--- PASS: TestRealDynamicSecurityHANativeWireSeparation (1.73s)
+=== RUN   TestRealDynamicSecurityM1ExpandedSensorFilter
+    expanded_filter_test.go:81: SUBACK phicomm/v2/u_<masked>/sensor/+/state = 1
+    expanded_filter_test.go:82: SUBACK phicomm/v2/u_<masked>/sensor/+/+ = 128
+    expanded_filter_test.go:94: SUBACK phicomm/v2/u_<masked>/sensor/+/metadata = 1
+    expanded_filter_test.go:95: SUBACK phicomm/v2/u_<masked>/sensor/+/+ = 128
+    expanded_filter_test.go:101: SUBACK phicomm/v2/u_<masked>/sensor/+/+ = 1
+    expanded_filter_test.go:102: SUBACK phicomm/v2/u_foreign/sensor/+/+ = 128
+    expanded_filter_test.go:136: PASS old policy rejects exact M1 filter; patched policy grants QoS1 without command/foreign receive access
+--- PASS: TestRealDynamicSecurityM1ExpandedSensorFilter (1.48s)
+=== RUN   TestRealDynamicSecurityHANativeWireSeparation
+    ha_native_wire_test.go:128: PASS owned HA JSON command/state and native MP command/state stay byte-transparent on distinct topics; foreign subscriptions denied; HA JSON never enters native relay/decoder
+--- PASS: TestRealDynamicSecurityHANativeWireSeparation (1.74s)
+=== RUN   TestRealDynamicSecurityM1ExpandedSensorFilter
+    expanded_filter_test.go:81: SUBACK phicomm/v2/u_<masked>/sensor/+/state = 1
+    expanded_filter_test.go:82: SUBACK phicomm/v2/u_<masked>/sensor/+/+ = 128
+    expanded_filter_test.go:94: SUBACK phicomm/v2/u_<masked>/sensor/+/metadata = 1
+    expanded_filter_test.go:95: SUBACK phicomm/v2/u_<masked>/sensor/+/+ = 128
+    expanded_filter_test.go:101: SUBACK phicomm/v2/u_<masked>/sensor/+/+ = 1
+    expanded_filter_test.go:102: SUBACK phicomm/v2/u_foreign/sensor/+/+ = 128
+    expanded_filter_test.go:136: PASS old policy rejects exact M1 filter; patched policy grants QoS1 without command/foreign receive access
+--- PASS: TestRealDynamicSecurityM1ExpandedSensorFilter (2.29s)
+=== RUN   TestRealDynamicSecurityHANativeWireSeparation
+    ha_native_wire_test.go:128: PASS owned HA JSON command/state and native MP command/state stay byte-transparent on distinct topics; foreign subscriptions denied; HA JSON never enters native relay/decoder
+--- PASS: TestRealDynamicSecurityHANativeWireSeparation (1.73s)
+PASS
+ok  	github.com/phicomm-io/iotcloud-community-mqtt/backend	14.765s
