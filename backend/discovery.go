@@ -43,7 +43,7 @@ func scopeRules(d Device) []Rule {
 	if d.Model == "tc1" || d.Model == "a1" || d.Model == "m1" || d.Model == "daikin" || d.Model == "s30-v1b" {
 		base := "phicomm/v2/" + userKey(topicUsername(d)) + "/sensor/" + d.MAC
 		rules = append(rules, Rule{"publishClientSend", base + "/state", true, 1}, Rule{"publishClientSend", base + "/metadata", true, 1})
-		if d.Model == "m1" || d.Model == "daikin" {
+		if d.Model == "m1" || d.Model == "daikin" || d.Model == "s30-v1b" {
 			rules = append(rules, Rule{"publishClientReceive", base + "/command", true, 1}, Rule{"subscribeLiteral", base + "/command", true, 1})
 		}
 	}
