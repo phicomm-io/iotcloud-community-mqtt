@@ -47,6 +47,14 @@ func TestAnalyticsCollectionAndAdminBoundary(t *testing.T) {
 	if w := request("POST", "/api/analytics/event", daikin, cfg.PublicURL, nil); w.Code != 204 {
 		t.Fatal("supported Daikin model rejected", w.Code, w.Body.String())
 	}
+	s30 := strings.Replace(daikin, `"model":"daikin"`, `"model":"s30-v1b"`, 1)
+	if w := request("POST", "/api/analytics/event", s30, cfg.PublicURL, nil); w.Code != 204 {
+		t.Fatal("supported S30 model rejected", w.Code, w.Body.String())
+	}
+	var views int
+	if err := app.store.QueryRow("SELECT COUNT(*) FROM analytics_events WHERE event='device_view' AND model='s30-v1b'").Scan(&views); err != nil || views != 1 {
+		t.Fatal("S30 view not recorded", views, err)
+	}
 	login := request("POST", "/api/auth/login", `{"username":"alice","password":"secret123"}`, cfg.PublicURL, nil)
 	if login.Code != 200 {
 		t.Fatal(login.Code, login.Body.String())
