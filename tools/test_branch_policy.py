@@ -37,7 +37,7 @@ class BranchPolicyTest(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         check('pull_request', event, '')
 
-    def test_stable_tags_and_real_main_ancestry(self):
+    def test_release_tags_and_real_main_ancestry(self):
         with tempfile.TemporaryDirectory() as directory, working_directory(directory):
             def git(*args):
                 return subprocess.run(['git', *args], check=True, capture_output=True)
@@ -46,17 +46,22 @@ class BranchPolicyTest(unittest.TestCase):
             git('config', 'user.name', 'Policy Test')
             git('config', 'user.email', 'policy@example.invalid')
             Path('fixture').write_text('stable\n')
-            git('add', 'fixture')
+            Path('VERSION').write_text('1.0.0\n')
+            git('add', 'fixture', 'VERSION')
             git('commit', '-m', 'stable')
             git('update-ref', 'refs/remotes/origin/main', 'HEAD')
             check('push', {}, 'refs/tags/v1.0.0')
-            check('workflow_dispatch', {}, 'refs/tags/v10.2.3')
+            check('push', {}, 'refs/tags/v1.0.0-rc')
+            check('workflow_dispatch', {}, 'refs/tags/v1.0.0-rc.0')
+            check('push', {}, 'refs/tags/v1.0.0-rc.10')
+            with self.assertRaises(ValueError):
+                check('push', {}, 'refs/tags/v1.0.1')
             git('checkout', '-b', 'dev')
             Path('fixture').write_text('unreleased\n')
             git('commit', '-am', 'unreleased')
             with self.assertRaises(subprocess.CalledProcessError):
-                check('push', {}, 'refs/tags/v1.0.1')
-            for ref in ('v0.9.99', 'v1.0.0-rc.1', 'v1.0.0+build', 'v1.00.0', 'v1.0', 'v01.0.0'):
+                check('push', {}, 'refs/tags/v1.0.0-rc.1')
+            for ref in ('v0.9.99', 'v1.0.0-rc.01', 'v1.0.0-beta', 'v1.0.0+build', 'v1.00.0', 'v1.0', 'v01.0.0'):
                 with self.subTest(ref=ref), self.assertRaises(ValueError):
                     check('push', {}, 'refs/tags/' + ref)
 

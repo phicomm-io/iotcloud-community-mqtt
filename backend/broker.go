@@ -258,7 +258,7 @@ func (b *DynamicBroker) notifyRelayReset() {
 }
 func (b *DynamicBroker) subscribeRelay(c mqtt.Client) error {
 	topics := map[string]byte{}
-	for _, leaf := range []string{"state", "availability", "result"} {
+	for _, leaf := range []string{"state", "availability", "result", "capabilities", "metadata"} {
 		topics["phicomm/v2/+/+/+/"+leaf] = 0
 	}
 	return waitToken(c.SubscribeMultiple(topics, func(_ mqtt.Client, m mqtt.Message) {

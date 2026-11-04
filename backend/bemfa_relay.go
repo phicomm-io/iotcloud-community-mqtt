@@ -3,7 +3,6 @@ package main
 import (
 	"crypto/cipher"
 	"crypto/tls"
-	"encoding/json"
 	"errors"
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -253,7 +252,14 @@ func (w *bemfaWorker) publishCommand(m BemfaMapping, action string, params map[s
 		return "", errors.New("mapping unavailable")
 	}
 	id := "bm_" + randomID()[:24]
-	data, _ := json.Marshal(map[string]interface{}{"action": action, "params": params, "request_id": id})
+	format, err := w.relay.app.store.deviceCodec(m.Device)
+	if err != nil {
+		return "", err
+	}
+	data, err := encodeDeviceWire(format, map[string]interface{}{"action": action, "params": params, "request_id": id})
+	if err != nil {
+		return "", err
+	}
 	b, ok := w.relay.app.broker.(interface{ relayPublish(string, []byte) error })
 	if !ok {
 		return "", errUnavailable
@@ -509,6 +515,10 @@ func (w *bemfaWorker) run() {
 					if !s.online {
 						s.data = nil
 						s.probe = ""
+						// Offline invalidates the old probe. A quick reconnect
+						// must be able to acquire state immediately, even inside
+						// the previous connection's one-second probe limit.
+						s.lastProbe = time.Time{}
 						for id, m := range pending {
 							if bemfaBase(m.Device) == base {
 								delete(pending, id)
@@ -521,7 +531,7 @@ func (w *bemfaWorker) run() {
 				case "state":
 					if !e.retained && s.online {
 						var data map[string]interface{}
-						if json.Unmarshal(e.payload, &data) == nil {
+						if w.relay.app.store.decodeDevice(mapping.Device, e.payload, &data) == nil {
 							s.data = data
 						}
 					}
@@ -534,7 +544,7 @@ func (w *bemfaWorker) run() {
 						Code      string                 `json:"code"`
 						Data      map[string]interface{} `json:"data"`
 					}
-					if json.Unmarshal(e.payload, &result) != nil {
+					if w.relay.app.store.decodeDevice(mapping.Device, e.payload, &result) != nil {
 						continue
 					}
 					if result.RequestID == s.probe && result.RequestID != "" {

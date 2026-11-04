@@ -1,0 +1,9 @@
+{
+  "source_repository": "phicomm-io/iotcloud-community-firmware",
+  "source_commit": "b390adfd",
+  "source_file": "BL2028N/protocol/mqtt/discovery_mp.h",
+  "capture": "retained MQTT discovery from the real C shared-service host test",
+  "device_id": "aabbccddeeff",
+  "physical_device": false,
+  "sha256": "f1a203e4ca096b91b71c163e1bce50726c1f7950547a9952f8d21761997c4949"
+}

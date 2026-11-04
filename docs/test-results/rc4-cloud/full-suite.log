@@ -1,0 +1,246 @@
+=== RUN   TestAccountAliasesShareCredentialsRolesAndDeviceOwner
+--- PASS: TestAccountAliasesShareCredentialsRolesAndDeviceOwner (0.31s)
+=== RUN   TestEmailRegistrationRequiresShortUsernameAndSeparatesEmail
+--- PASS: TestEmailRegistrationRequiresShortUsernameAndSeparatesEmail (0.29s)
+=== RUN   TestScopedIdentityDatabaseUpgrade
+--- PASS: TestScopedIdentityDatabaseUpgrade (0.16s)
+=== RUN   TestAliasPasswordFailureCannotLeaveOldAliasCredentialsEnabled
+--- PASS: TestAliasPasswordFailureCannotLeaveOldAliasCredentialsEnabled (0.18s)
+=== RUN   TestUsernameHTTPBoundariesBeforeDatabaseAndBrokerWrites
+=== RUN   TestUsernameHTTPBoundariesBeforeDatabaseAndBrokerWrites//api/register
+=== RUN   TestUsernameHTTPBoundariesBeforeDatabaseAndBrokerWrites//api/admin/users
+=== RUN   TestUsernameHTTPBoundariesBeforeDatabaseAndBrokerWrites//api/auth/alias
+--- PASS: TestUsernameHTTPBoundariesBeforeDatabaseAndBrokerWrites (0.66s)
+    --- PASS: TestUsernameHTTPBoundariesBeforeDatabaseAndBrokerWrites//api/register (0.23s)
+    --- PASS: TestUsernameHTTPBoundariesBeforeDatabaseAndBrokerWrites//api/admin/users (0.23s)
+    --- PASS: TestUsernameHTTPBoundariesBeforeDatabaseAndBrokerWrites//api/auth/alias (0.19s)
+=== RUN   TestUsernameInternalCreationEntriesCannotBypassPolicy
+=== RUN   TestUsernameInternalCreationEntriesCannotBypassPolicy/register
+=== RUN   TestUsernameInternalCreationEntriesCannotBypassPolicy/registerLocked
+=== RUN   TestUsernameInternalCreationEntriesCannotBypassPolicy/registerWithEmail
+=== RUN   TestUsernameInternalCreationEntriesCannotBypassPolicy/registerGitHubAccountLocked
+=== RUN   TestUsernameInternalCreationEntriesCannotBypassPolicy/addMQTTAlias
+=== RUN   TestUsernameInternalCreationEntriesCannotBypassPolicy/registerPassword
+=== RUN   TestUsernameInternalCreationEntriesCannotBypassPolicy/registerLockedPassword
+=== RUN   TestUsernameInternalCreationEntriesCannotBypassPolicy/registerWithEmailPassword
+=== RUN   TestUsernameInternalCreationEntriesCannotBypassPolicy/registerGitHubAccountLockedPassword
+--- PASS: TestUsernameInternalCreationEntriesCannotBypassPolicy (0.30s)
+    --- PASS: TestUsernameInternalCreationEntriesCannotBypassPolicy/register (0.00s)
+    --- PASS: TestUsernameInternalCreationEntriesCannotBypassPolicy/registerLocked (0.00s)
+    --- PASS: TestUsernameInternalCreationEntriesCannotBypassPolicy/registerWithEmail (0.00s)
+    --- PASS: TestUsernameInternalCreationEntriesCannotBypassPolicy/registerGitHubAccountLocked (0.00s)
+    --- PASS: TestUsernameInternalCreationEntriesCannotBypassPolicy/addMQTTAlias (0.00s)
+    --- PASS: TestUsernameInternalCreationEntriesCannotBypassPolicy/registerPassword (0.00s)
+    --- PASS: TestUsernameInternalCreationEntriesCannotBypassPolicy/registerLockedPassword (0.00s)
+    --- PASS: TestUsernameInternalCreationEntriesCannotBypassPolicy/registerWithEmailPassword (0.00s)
+    --- PASS: TestUsernameInternalCreationEntriesCannotBypassPolicy/registerGitHubAccountLockedPassword (0.00s)
+=== RUN   TestUsernameEmail254IsOnlyAVerifiedLoginAlias
+--- PASS: TestUsernameEmail254IsOnlyAVerifiedLoginAlias (0.62s)
+=== RUN   TestUsernameLegacyLongPrimaryCanLoginAndCreateShortMQTTAlias
+--- PASS: TestUsernameLegacyLongPrimaryCanLoginAndCreateShortMQTTAlias (0.33s)
+=== RUN   TestUsernameGitHubBoundaryDoesNotClaimFlowOrReservePrincipal
+--- PASS: TestUsernameGitHubBoundaryDoesNotClaimFlowOrReservePrincipal (0.23s)
+=== RUN   TestUsernameGitHubKeepsExistingLongPrimary
+--- PASS: TestUsernameGitHubKeepsExistingLongPrimary (0.18s)
+=== RUN   TestUsernameBootstrapLimitAndCompletedLegacyAdmin
+--- PASS: TestUsernameBootstrapLimitAndCompletedLegacyAdmin (0.16s)
+=== RUN   TestUnifiedAdminAuthorization
+--- PASS: TestUnifiedAdminAuthorization (0.19s)
+=== RUN   TestAdminBootstrapOnceAndNoPrivilegeAdoption
+--- PASS: TestAdminBootstrapOnceAndNoPrivilegeAdoption (0.34s)
+=== RUN   TestAnalyticsCollectionAndAdminBoundary
+--- PASS: TestAnalyticsCollectionAndAdminBoundary (0.19s)
+=== RUN   TestAnalyticsUniqueVisitsModelsAndRetention
+--- PASS: TestAnalyticsUniqueVisitsModelsAndRetention (0.19s)
+=== RUN   TestOwnershipFailureRecoveryAndRelease
+--- PASS: TestOwnershipFailureRecoveryAndRelease (0.18s)
+=== RUN   TestConcurrentExclusiveMAC
+--- PASS: TestConcurrentExclusiveMAC (0.17s)
+=== RUN   TestSessionsCSRFAndAdminSeparation
+--- PASS: TestSessionsCSRFAndAdminSeparation (0.19s)
+=== RUN   TestAccountAndDeviceInputBoundaries
+--- PASS: TestAccountAndDeviceInputBoundaries (0.00s)
+=== RUN   TestBannerPermissionsValidationAndPersistence
+--- PASS: TestBannerPermissionsValidationAndPersistence (0.19s)
+=== RUN   TestBemfaWriteOnlyEncryptedPersistentCredentials
+--- PASS: TestBemfaWriteOnlyEncryptedPersistentCredentials (0.18s)
+=== RUN   TestBemfaKeyDurabilityAndPermissions
+--- PASS: TestBemfaKeyDurabilityAndPermissions (0.00s)
+=== RUN   TestBemfaOwnershipAndMappings
+=== RUN   TestBemfaOwnershipAndMappings/wrong_suffix
+=== RUN   TestBemfaOwnershipAndMappings/wildcard
+=== RUN   TestBemfaOwnershipAndMappings/all_outlets
+=== RUN   TestBemfaOwnershipAndMappings/seventh_outlet
+=== RUN   TestBemfaOwnershipAndMappings/namespace
+=== RUN   TestBemfaOwnershipAndMappings/legacy
+=== RUN   TestBemfaOwnershipAndMappings/duplicate
+=== RUN   TestBemfaOwnershipAndMappings/no_mapping
+=== RUN   TestBemfaOwnershipAndMappings/no_key
+--- PASS: TestBemfaOwnershipAndMappings (0.19s)
+    --- PASS: TestBemfaOwnershipAndMappings/wrong_suffix (0.00s)
+    --- PASS: TestBemfaOwnershipAndMappings/wildcard (0.00s)
+    --- PASS: TestBemfaOwnershipAndMappings/all_outlets (0.00s)
+    --- PASS: TestBemfaOwnershipAndMappings/seventh_outlet (0.00s)
+    --- PASS: TestBemfaOwnershipAndMappings/namespace (0.00s)
+    --- PASS: TestBemfaOwnershipAndMappings/legacy (0.00s)
+    --- PASS: TestBemfaOwnershipAndMappings/duplicate (0.00s)
+    --- PASS: TestBemfaOwnershipAndMappings/no_mapping (0.00s)
+    --- PASS: TestBemfaOwnershipAndMappings/no_key (0.00s)
+=== RUN   TestBemfaCommandsAndCanonicalReports
+--- PASS: TestBemfaCommandsAndCanonicalReports (0.00s)
+=== RUN   TestBemfaRouteAuthenticationAndCSRF
+--- PASS: TestBemfaRouteAuthenticationAndCSRF (0.15s)
+=== RUN   TestBemfaRealWireRelayIsolationAndNoReplay
+=== RUN   TestBemfaRealWireRelayIsolationAndNoReplay/json
+=== RUN   TestBemfaRealWireRelayIsolationAndNoReplay/msgpack
+--- PASS: TestBemfaRealWireRelayIsolationAndNoReplay (3.39s)
+    --- PASS: TestBemfaRealWireRelayIsolationAndNoReplay/json (1.67s)
+    --- PASS: TestBemfaRealWireRelayIsolationAndNoReplay/msgpack (1.73s)
+=== RUN   TestRealDynamicSecurityBemfaRelay
+    bemfa_wire_test.go:346: isolated dynamic-security broker required
+--- SKIP: TestRealDynamicSecurityBemfaRelay (0.00s)
+=== RUN   TestBemfaDeniedSubscriptionIsNotConnected
+--- PASS: TestBemfaDeniedSubscriptionIsNotConnected (0.18s)
+=== RUN   TestRelayPreservesOpaqueBinary
+--- PASS: TestRelayPreservesOpaqueBinary (0.00s)
+=== RUN   TestCloudMixedWireDeviceMatrix
+    cloud_matrix_test.go:230: PASS mixed JSON/MP online, result/state and cross-account mapping isolation
+    cloud_matrix_test.go:246: PASS malformed/wrong-codec/foreign state cannot replace known readings
+    cloud_matrix_test.go:272: PASS live codec upgrade/rollback without worker reload; malformed discovery rejected
+    cloud_matrix_test.go:295: PASS busy no-replay, offline drop, recovery without delayed write
+--- PASS: TestCloudMixedWireDeviceMatrix (1.80s)
+=== RUN   TestRealDynamicSecurityMixedCodecs
+    cloud_matrix_test.go:304: isolated broker required
+--- SKIP: TestRealDynamicSecurityMixedCodecs (0.00s)
+=== RUN   TestFrontendOriginsAndSession
+--- PASS: TestFrontendOriginsAndSession (0.00s)
+=== RUN   TestCrossOriginBearerLoginAndRevocation
+--- PASS: TestCrossOriginBearerLoginAndRevocation (0.18s)
+=== RUN   TestDiscoveryRefreshesExistingSensorACL
+=== RUN   TestDiscoveryRefreshesExistingSensorACL/tc1
+=== RUN   TestDiscoveryRefreshesExistingSensorACL/a1
+=== RUN   TestDiscoveryRefreshesExistingSensorACL/m1
+=== RUN   TestDiscoveryRefreshesExistingSensorACL/daikin
+--- PASS: TestDiscoveryRefreshesExistingSensorACL (0.74s)
+    --- PASS: TestDiscoveryRefreshesExistingSensorACL/tc1 (0.16s)
+    --- PASS: TestDiscoveryRefreshesExistingSensorACL/a1 (0.20s)
+    --- PASS: TestDiscoveryRefreshesExistingSensorACL/m1 (0.19s)
+    --- PASS: TestDiscoveryRefreshesExistingSensorACL/daikin (0.18s)
+=== RUN   TestManualTMCPRegistrationAndRestore
+=== RUN   TestManualTMCPRegistrationAndRestore/admin=false/tc1
+=== RUN   TestManualTMCPRegistrationAndRestore/admin=false/m1
+=== RUN   TestManualTMCPRegistrationAndRestore/admin=false/a1
+=== RUN   TestManualTMCPRegistrationAndRestore/admin=false/daikin
+=== RUN   TestManualTMCPRegistrationAndRestore/admin=true/tc1
+=== RUN   TestManualTMCPRegistrationAndRestore/admin=true/m1
+=== RUN   TestManualTMCPRegistrationAndRestore/admin=true/a1
+=== RUN   TestManualTMCPRegistrationAndRestore/admin=true/daikin
+--- PASS: TestManualTMCPRegistrationAndRestore (1.79s)
+    --- PASS: TestManualTMCPRegistrationAndRestore/admin=false/tc1 (0.27s)
+    --- PASS: TestManualTMCPRegistrationAndRestore/admin=false/m1 (0.27s)
+    --- PASS: TestManualTMCPRegistrationAndRestore/admin=false/a1 (0.25s)
+    --- PASS: TestManualTMCPRegistrationAndRestore/admin=false/daikin (0.22s)
+    --- PASS: TestManualTMCPRegistrationAndRestore/admin=true/tc1 (0.22s)
+    --- PASS: TestManualTMCPRegistrationAndRestore/admin=true/m1 (0.19s)
+    --- PASS: TestManualTMCPRegistrationAndRestore/admin=true/a1 (0.19s)
+    --- PASS: TestManualTMCPRegistrationAndRestore/admin=true/daikin (0.19s)
+=== RUN   TestManualTMCPRestoreBrokerFailure
+--- PASS: TestManualTMCPRestoreBrokerFailure (0.19s)
+=== RUN   TestManualTMCPAdditionDuringUnbind
+--- PASS: TestManualTMCPAdditionDuringUnbind (0.19s)
+=== RUN   TestManualLegacyTC1Registration
+=== RUN   TestManualLegacyTC1Registration/admin=false
+=== RUN   TestManualLegacyTC1Registration/admin=true
+--- PASS: TestManualLegacyTC1Registration (0.37s)
+    --- PASS: TestManualLegacyTC1Registration/admin=false (0.18s)
+    --- PASS: TestManualLegacyTC1Registration/admin=true (0.19s)
+=== RUN   TestDiscoveryCodecUpgradeDowngrade
+--- PASS: TestDiscoveryCodecUpgradeDowngrade (0.69s)
+=== RUN   TestBoundedMessagePack
+--- PASS: TestBoundedMessagePack (0.00s)
+=== RUN   TestMetadataACLScoped
+--- PASS: TestMetadataACLScoped (0.18s)
+=== RUN   TestManualRegistrationCannotSelectCodec
+--- PASS: TestManualRegistrationCannotSelectCodec (0.17s)
+=== RUN   TestScopedDiscoveryIsolationAndLegacyOwnership
+--- PASS: TestScopedDiscoveryIsolationAndLegacyOwnership (0.26s)
+=== RUN   TestUserKey
+--- PASS: TestUserKey (0.00s)
+=== RUN   TestTMCPDeviceACLTracksRegistrationAndUnbind
+--- PASS: TestTMCPDeviceACLTracksRegistrationAndUnbind (0.19s)
+=== RUN   TestGitHubLinkAndStableIdentityLogin
+--- PASS: TestGitHubLinkAndStableIdentityLogin (0.29s)
+=== RUN   TestGitHubRegistrationConflictVerifiedEmailAndBrokerRecovery
+--- PASS: TestGitHubRegistrationConflictVerifiedEmailAndBrokerRecovery (0.64s)
+=== RUN   TestGitHubFlowOriginProofExpiryDenialAndReplay
+--- PASS: TestGitHubFlowOriginProofExpiryDenialAndReplay (0.22s)
+=== RUN   TestGitHubRegistrationPolicyAndLinkSessionChanges
+--- PASS: TestGitHubRegistrationPolicyAndLinkSessionChanges (0.39s)
+=== RUN   TestGitHubUnlinkRequiresPasswordAndRevokesSessions
+--- PASS: TestGitHubUnlinkRequiresPasswordAndRevokesSessions (0.24s)
+=== RUN   TestGitHubConcurrentCompletionIssuesOneSession
+--- PASS: TestGitHubConcurrentCompletionIssuesOneSession (0.25s)
+=== RUN   TestGitHubConfigDisabledAndSecretFileValidation
+--- PASS: TestGitHubConfigDisabledAndSecretFileValidation (0.00s)
+=== RUN   TestHomeAssistantBirthNewAndExistingAccounts
+--- PASS: TestHomeAssistantBirthNewAndExistingAccounts (0.17s)
+=== RUN   TestRealDynamicSecurityHADiscovery
+    ha_discovery_integration_test.go:16: isolated broker required
+--- SKIP: TestRealDynamicSecurityHADiscovery (0.00s)
+=== RUN   TestPreferredLanguage
+--- PASS: TestPreferredLanguage (0.00s)
+=== RUN   TestAPIResponseLanguages
+--- PASS: TestAPIResponseLanguages (0.00s)
+=== RUN   TestSuccessMessagesPreserveUserValues
+--- PASS: TestSuccessMessagesPreserveUserValues (0.00s)
+=== RUN   TestRealDynamicSecurity
+    integration_test.go:16: isolated broker required
+--- SKIP: TestRealDynamicSecurity (0.00s)
+=== RUN   TestRealPersistence
+    integration_test.go:147: isolated restart phase required
+--- SKIP: TestRealPersistence (0.00s)
+=== RUN   TestRealMigration
+    integration_test.go:217: isolated migrated broker required
+--- SKIP: TestRealMigration (0.00s)
+=== RUN   TestRealDynamicSecurityDiscovery
+    integration_test.go:253: isolated broker required
+--- SKIP: TestRealDynamicSecurityDiscovery (0.00s)
+=== RUN   TestRealDynamicSecurityAliasesAndLinkage
+    integration_test.go:419: isolated broker required
+--- SKIP: TestRealDynamicSecurityAliasesAndLinkage (0.00s)
+=== RUN   TestRealDynamicSecurityM1DisplaySources
+    sensor_acl_integration_test.go:16: isolated broker required
+--- SKIP: TestRealDynamicSecurityM1DisplaySources (0.00s)
+=== RUN   TestM1DisplayACLTracksPrincipalScopesAndRevocation
+--- PASS: TestM1DisplayACLTracksPrincipalScopesAndRevocation (0.25s)
+=== RUN   TestTypedSensorPublishACLIsExactAndModelSpecific
+=== RUN   TestTypedSensorPublishACLIsExactAndModelSpecific/tc1
+=== RUN   TestTypedSensorPublishACLIsExactAndModelSpecific/a1
+=== RUN   TestTypedSensorPublishACLIsExactAndModelSpecific/m1
+=== RUN   TestTypedSensorPublishACLIsExactAndModelSpecific/daikin
+--- PASS: TestTypedSensorPublishACLIsExactAndModelSpecific (0.78s)
+    --- PASS: TestTypedSensorPublishACLIsExactAndModelSpecific/tc1 (0.20s)
+    --- PASS: TestTypedSensorPublishACLIsExactAndModelSpecific/a1 (0.19s)
+    --- PASS: TestTypedSensorPublishACLIsExactAndModelSpecific/m1 (0.19s)
+    --- PASS: TestTypedSensorPublishACLIsExactAndModelSpecific/daikin (0.20s)
+=== RUN   TestMigrationHashesAndRepeatedACL
+--- PASS: TestMigrationHashesAndRepeatedACL (0.07s)
+=== RUN   TestBootstrapRefusesOverwrite
+Initialized /tmp/TestBootstrapRefusesOverwrite4189450994/001/runtime (0 users, 0 devices). Admin password is in secrets/admin-password; no passwords printed.
+--- PASS: TestBootstrapRefusesOverwrite (0.18s)
+=== RUN   TestMigrationExplicitProductOverridesSameOwnerGenericStub
+--- PASS: TestMigrationExplicitProductOverridesSameOwnerGenericStub (0.04s)
+=== RUN   TestVerificationDurableLifecycle
+--- PASS: TestVerificationDurableLifecycle (0.19s)
+=== RUN   TestVerificationHistoryLanguagesAndLegacyDetails
+--- PASS: TestVerificationHistoryLanguagesAndLegacyDetails (0.19s)
+=== RUN   TestVerificationHTTPAndAdminRecords
+--- PASS: TestVerificationHTTPAndAdminRecords (0.28s)
+=== RUN   TestVerificationRetentionAndInterruptedSend
+--- PASS: TestVerificationRetentionAndInterruptedSend (0.21s)
+=== RUN   TestIndependentWebsiteAndMQTTPasswords
+--- PASS: TestIndependentWebsiteAndMQTTPasswords (0.29s)
+=== RUN   TestMQTTPasswordEndpoint
+--- PASS: TestMQTTPasswordEndpoint (0.22s)
+PASS
+ok  	github.com/phicomm-io/iotcloud-community-mqtt/backend	20.837s

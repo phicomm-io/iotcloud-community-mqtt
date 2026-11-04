@@ -62,7 +62,7 @@ scripts/test-browser-compose.sh
 
 更新前端时，从已验证的 `frontend-<完整commit>` Release 复制 `frontend.lock.json`，运行下载校验、平台及浏览器测试后提交；离线构建使用 `--archive`，同样校验哈希。相邻工作区不会自动进入镜像。
 
-稳定版本由 `main` 上的 `v1.0.0` 及后续正式版本标签发布 GitHub Release 和 amd64/arm64 GHCR 镜像；PR、`dev` 和普通 `main` 提交只运行检查。镜像名为 `iotcloud-community-mqtt-backend` 与 `iotcloud-community-mqtt-web`。部署固定版本或 digest，并复用原配置和数据；发布不会自动替换运行中的服务。官网仅从正式 Release 同步锁定的[平台演示](https://phicomm-io.github.io/demos/platform/)。
+`VERSION` 保存数字核心版本（如 `1.0.0`）。`main` 上匹配该版本的 `v1.0.0`、`v1.0.0-rc` 或 `v1.0.0-rc.N` 标签通过检查后发布 GitHub Release 和 amd64/arm64 GHCR 镜像；候选版标记为 prerelease，只发布对应版本镜像，不更新 `latest`。PR、`dev` 和普通 `main` 提交只运行检查。镜像名为 `iotcloud-community-mqtt-backend` 与 `iotcloud-community-mqtt-web`；Release 的 `release-manifest.json` 记录源码、前端锁和两个镜像 digest。部署与版本查询见[运维说明](docs/OPERATIONS.md)。官网仅从正式 Release 同步锁定的[平台演示](https://phicomm-io.github.io/demos/platform/)。
 
 ## 许可
 

@@ -1,0 +1,9 @@
+=== RUN   TestRealDynamicSecurityBemfaRelay
+--- PASS: TestRealDynamicSecurityBemfaRelay (0.94s)
+=== RUN   TestRealDynamicSecurityMixedCodecs
+    cloud_matrix_test.go:426: PASS actual Mosquitto Dynamic Security: JSON and MP same-MAC devices online, fixed control/state codecs, foreign receive denied
+--- PASS: TestRealDynamicSecurityMixedCodecs (2.16s)
+=== RUN   TestRealDynamicSecurityM1DisplaySources
+--- PASS: TestRealDynamicSecurityM1DisplaySources (11.75s)
+PASS
+ok  	github.com/phicomm-io/iotcloud-community-mqtt/backend	14.863s
