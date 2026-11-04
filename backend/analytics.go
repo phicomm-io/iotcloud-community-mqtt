@@ -66,7 +66,7 @@ func handleAnalyticsEvent(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, messageText("e.2ea3a69ca256"), 400)
 		return
 	}
-	if e.Model != "" && e.Model != "tc1" && e.Model != "m1" && e.Model != "a1" && e.Model != "daikin" {
+	if e.Model != "" && e.Model != "tc1" && e.Model != "m1" && e.Model != "a1" && e.Model != "daikin" && e.Model != "s30-v1b" {
 		jsonError(w, messageText("e.657f8459718b"), 400)
 		return
 	}
