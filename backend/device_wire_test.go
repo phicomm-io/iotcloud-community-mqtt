@@ -173,3 +173,49 @@ func TestS30DiscoveryKeepsIdentityAndBinaryOnlyCodec(t *testing.T) {
 		t.Fatal("S30 inherited legacy global JSON codec")
 	}
 }
+
+func TestG3ScreenAndOnlineUpdatesUseOwnedBinaryDevice(t *testing.T) {
+	a := testApp(t)
+	mac := "aabbccddeeff"
+	root := "phicomm/v2/" + userKey("alice")
+	announcement := binaryAnnouncement(t, mac)
+	announcement["model"] = "daikin"
+	announcement["hardware_model"] = "BRY88BBA15G"
+	announcement["variant"] = "full"
+	announcement["firmware_version"] = "1.0.0-rc.6"
+	data, err := msgpack.Marshal(announcement)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = a.discover(root+"/discovery/"+mac, data); err != nil {
+		t.Fatal(err)
+	}
+	d := Device{Namespace: "account", Username: "alice", MAC: mac, Model: "daikin", Version: "v2"}
+	if codec, err := a.store.deviceCodec(d); err != nil || codec != "msgpack" {
+		t.Fatal(codec, err)
+	}
+	b := a.broker.(*fakeBroker)
+	role := deviceRole(d)
+	if !b.attached["alice"][role] || b.attached["bob"][role] {
+		t.Fatal("incorrect G3 role ownership")
+	}
+	for _, kind := range []string{"publishClientSend", "publishClientReceive", "subscribePattern"} {
+		if !hasACL(b.acl[role], kind, root+"/daikin/"+mac+"/#") {
+			t.Fatal("missing G3 screen/OTA route", kind)
+		}
+	}
+	for _, action := range []string{"screen.page.set", "screen.layout.begin", "screen.update.get", "ota.check", "ota.install"} {
+		request := map[string]any{"action": action, "params": map[string]any{"value": 1}}
+		encoded, err := msgpack.Marshal(request)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var decoded map[string]any
+		if err := a.store.decodeDevice(d, encoded, &decoded); err != nil || decoded["action"] != action {
+			t.Fatal(action, decoded, err)
+		}
+		if err := a.store.decodeDevice(d, []byte(`{"action":"`+action+`"}`), &decoded); err == nil {
+			t.Fatal("G3 binary session accepted JSON", action)
+		}
+	}
+}
