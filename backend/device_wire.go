@@ -31,22 +31,17 @@ func decodeDeviceWire(data []byte, out any) error {
 	if len(data) == 0 || len(data) > 8192 {
 		return invalidDeviceWire()
 	}
-	format := deviceWireFormat(data)
-	if format == "json" {
+	if deviceWireFormat(data) == "json" {
 		return json.Unmarshal(data, out)
 	}
-	if err := deviceBinaryPreflight(format, data); err != nil {
+	if err := deviceBinaryPreflight(data); err != nil {
 		return err
 	}
 	var value any
-	if format == "msgpack" {
-		dec := msgpack.NewDecoder(bytes.NewReader(data))
-		dec.SetMapDecoder(func(d *msgpack.Decoder) (interface{}, error) { return d.DecodeMap() })
-		if err := dec.Decode(&value); err != nil {
-			return err
-		}
-	} else {
-		return invalidDeviceWire()
+	dec := msgpack.NewDecoder(bytes.NewReader(data))
+	dec.SetMapDecoder(func(d *msgpack.Decoder) (interface{}, error) { return d.DecodeMap() })
+	if err := dec.Decode(&value); err != nil {
+		return err
 	}
 	if _, ok := value.(map[string]any); !ok {
 		return invalidDeviceWire()

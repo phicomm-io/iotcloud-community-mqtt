@@ -8,7 +8,7 @@ import (
 
 // Validate lengths/depth before library decoding can allocate from an attacker
 // supplied array header. Device messages contain finite floats but no tags or blobs.
-func deviceBinaryPreflight(format string, data []byte) error {
+func deviceBinaryPreflight(data []byte) error {
 	p, nodes := 0, 0
 	read := func(n int) (uint64, error) {
 		if n > len(data)-p {
@@ -32,69 +32,65 @@ func deviceBinaryPreflight(format string, data []byte) error {
 		kind := ""
 		var n uint64
 		var err error
-		if format == "msgpack" {
-			switch {
-			case tag < 0x80 || tag >= 0xe0 || tag == 0xc0 || tag == 0xc2 || tag == 0xc3:
-				return "", false, nil
-			case tag&0xe0 == 0xa0:
-				kind = "text"
-				n = uint64(tag & 31)
-			case tag&0xf0 == 0x80:
-				kind = "map"
-				n = uint64(tag & 15)
-			case tag&0xf0 == 0x90:
-				kind = "array"
-				n = uint64(tag & 15)
-			case tag == 0xca || tag == 0xcb:
-				width := 4
-				if tag == 0xcb {
-					width = 8
-				}
-				bits, e := read(width)
-				value := math.Float64frombits(bits)
-				if width == 4 {
-					value = float64(math.Float32frombits(uint32(bits)))
-				}
-				if e != nil || math.IsNaN(value) || math.IsInf(value, 0) {
-					return "", false, invalidDeviceWire()
-				}
-				return "", false, nil
-			case tag >= 0xcc && tag <= 0xcf:
-				n, err = read(1 << uint(tag-0xcc))
-				if err != nil || n > uint64(deviceSafeInteger) {
-					return "", false, invalidDeviceWire()
-				}
-				return "", false, nil
-			case tag >= 0xd0 && tag <= 0xd3:
-				width := 1 << uint(tag-0xd0)
-				bits, e := read(width)
-				if e != nil {
-					return "", false, e
-				}
-				if width < 8 && bits&(uint64(1)<<uint(width*8-1)) != 0 {
-					bits |= ^uint64(0) << uint(width*8)
-				}
-				value := int64(bits)
-				if value < -deviceSafeInteger || value > deviceSafeInteger {
-					return "", false, invalidDeviceWire()
-				}
-				return "", false, nil
-			case tag >= 0xd9 && tag <= 0xdb:
-				kind = "text"
-				n, err = read(1 << uint(tag-0xd9))
-			case tag == 0xdc || tag == 0xdd:
-				kind = "array"
-				n, err = read(1 << uint(tag-0xdb))
-			case tag == 0xde || tag == 0xdf:
-				kind = "map"
-				n, err = read(1 << uint(tag-0xdd))
-			default:
+		switch {
+		case tag < 0x80 || tag >= 0xe0 || tag == 0xc0 || tag == 0xc2 || tag == 0xc3:
+			return "", false, nil
+		case tag&0xe0 == 0xa0:
+			kind = "text"
+			n = uint64(tag & 31)
+		case tag&0xf0 == 0x80:
+			kind = "map"
+			n = uint64(tag & 15)
+		case tag&0xf0 == 0x90:
+			kind = "array"
+			n = uint64(tag & 15)
+		case tag == 0xca || tag == 0xcb:
+			width := 4
+			if tag == 0xcb {
+				width = 8
+			}
+			bits, e := read(width)
+			value := math.Float64frombits(bits)
+			if width == 4 {
+				value = float64(math.Float32frombits(uint32(bits)))
+			}
+			if e != nil || math.IsNaN(value) || math.IsInf(value, 0) {
 				return "", false, invalidDeviceWire()
 			}
-
-		} else {
+			return "", false, nil
+		case tag >= 0xcc && tag <= 0xcf:
+			n, err = read(1 << uint(tag-0xcc))
+			if err != nil || n > uint64(deviceSafeInteger) {
+				return "", false, invalidDeviceWire()
+			}
+			return "", false, nil
+		case tag >= 0xd0 && tag <= 0xd3:
+			width := 1 << uint(tag-0xd0)
+			bits, e := read(width)
+			if e != nil {
+				return "", false, e
+			}
+			if width < 8 && bits&(uint64(1)<<uint(width*8-1)) != 0 {
+				bits |= ^uint64(0) << uint(width*8)
+			}
+			value := int64(bits)
+			if value < -deviceSafeInteger || value > deviceSafeInteger {
+				return "", false, invalidDeviceWire()
+			}
+			return "", false, nil
+		case tag >= 0xd9 && tag <= 0xdb:
+			kind = "text"
+			n, err = read(1 << uint(tag-0xd9))
+		case tag == 0xdc || tag == 0xdd:
+			kind = "array"
+			n, err = read(1 << uint(tag-0xdb))
+		case tag == 0xde || tag == 0xdf:
+			kind = "map"
+			n, err = read(1 << uint(tag-0xdd))
+		default:
 			return "", false, invalidDeviceWire()
 		}
+
 		if err != nil {
 			return "", false, err
 		}
@@ -109,11 +105,7 @@ func deviceBinaryPreflight(format string, data []byte) error {
 			}
 			return string(value), true, nil
 		}
-		limit := uint64(1024)
-		if kind == "array" {
-			limit = 1024
-		}
-		if n > limit {
+		if n > 1024 {
 			return "", false, invalidDeviceWire()
 		}
 		keys := map[string]bool{}

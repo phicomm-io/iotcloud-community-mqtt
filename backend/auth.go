@@ -301,11 +301,7 @@ func adminAuth(next http.HandlerFunc) http.HandlerFunc {
 }
 func operationError(w http.ResponseWriter, err error) {
 	switch {
-	case errors.Is(err, errAccountName):
-		jsonError(w, err.Error(), 409)
-	case errors.Is(err, errLastAdmin):
-		jsonError(w, err.Error(), 409)
-	case errors.Is(err, errConflict):
+	case errors.Is(err, errAccountName), errors.Is(err, errLastAdmin), errors.Is(err, errConflict):
 		jsonError(w, err.Error(), 409)
 	case errors.Is(err, sql.ErrNoRows):
 		jsonError(w, messageText("e.e4ba03868d92"), 404)
